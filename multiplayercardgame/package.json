@@ -4,5 +4,8 @@
   "private": true,
   "dependencies": {
     "express": "~4.16.0"
+  },
+  "scripts": {
+    "start": "node app.js"
   }
 }
