@@ -1,4 +1,5 @@
 import React from 'react';
+import io from 'socket.io-client';
 
 class Lobby extends React.Component {
   constructor(props) {
@@ -14,8 +15,7 @@ class Lobby extends React.Component {
         // TODO: room doesn't exist
         return;
       }
-      // eslint-disable-next-line no-undef
-      this.lobby = io.connect(`http://localhost:5000/${roomId}`, {path: '/swf/socket.io'});
+      this.lobby = io.connect(`http://localhost:5000/${roomId}`);
       this.lobby.on('room full', () => {
         // TODO: room is full
       });

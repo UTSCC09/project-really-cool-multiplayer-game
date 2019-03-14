@@ -5,7 +5,7 @@ const path = require('path')
 const server = require('http').createServer(app);
 const PORT = process.env.PORT || 5000
 const mongoose = require('mongoose');
-const io = require('socket.io')(server, {path: '/swf/socket.io'});
+const io = require('socket.io')(server);
 const crypto = require("crypto");
 
 // mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/db")
