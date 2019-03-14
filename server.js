@@ -15,7 +15,10 @@ const cookieSession = require('cookie-session');
 //DB stuff
 const userScheme = new mongoose.Schema({
   googleId: String,
-  email: String
+  email: String,
+  token: String,
+  givenName: String,
+  familyName: String
 });
 
 const instructionScheme = new mongoose.Schema({
@@ -93,9 +96,19 @@ app.get('/auth/google/callback/', passport.authenticate('google', {failureRedire
   // Add the user to the DB
   let email = req.user.profile.email;
   let googleId = req.user.profile.id;
-  let update = {"$set": {email: email, googleId: googleId}}
-  let option = {new: true, upsert: true};
-  User.findOneAndUpdate({email: email}, update, option).exec(function(err, user) {
+  let givenName = req.user.profile.name.givenName;
+  let familyName = req.user.profile.name.familyName;
+
+  let update = {
+    token: req.user.token,
+    email: email,
+    googleId: googleId,
+    givenName: givenName,
+    familyName: familyName
+  }
+  let option = {new: true, upsert: true, setDefaultOnInsert: true};
+
+  User.findOneAndUpdate({googleId: googleId}, update, option).exec(function(err, user) {
     if (err) return res.send(500, { error: err });
     // set details:
     req.session.userId = user._id;
