@@ -62,11 +62,6 @@ app.use(cookieParser());
 // SERVER ROUTES
 // CREATE
 app.post('/deck/', isAuthenticated, function(req, res) {
-  // USer is authenticated
-  // get contesnts of req
-  // create document for db
-  // add to db
-  // send new id in response
   let deckContent = req.body.content;
   let newDeck = new Deck({content: deckContent, ownerId: req.session.userId});
   newDeck.save(function(err, newDeck) {
@@ -117,36 +112,54 @@ app.get('/logout', function (req, res) {
     res.redirect('/');
 });
 
-
 app.get('/deck/:id/', function(req, res) {
-
+  let id = req.params.id;
+  Deck.findById(id, function(err, deck) {
+    if (err) return res.send(500, {error : err});
+    else if (user === null) return res.send(404, {error: 'Deck not found'});
+    else return res.json(deck);
+  });
 });
 
 app.get('user/:id/', function(req, res) {
-
+  let id = req.params.id;
+  User.findById(id, function(err, user) {
+    if (err) return res.send(500, {error : err});
+    else if (user === null) return res.send(404, {error: 'User not found'});
+    else return res.json(user);
+  });
 });
-
 
 // UPDATE
 app.put('/deck/:id/', function(req, res) {
-
-});
-
-app.put('deck/:id/', function(req, res) {
-
+  let id = req.params.id;
+  let content = req.body.content;
+  let update = {content: content}
+  Deck.findByIdAndUpdate(id, update, function(err, deck) {
+    if (err) return res.send(500, { error: err });
+    else if (deck === null) return res.send(404, {error: "Deck does not exist"});
+    else return res.json(deck);
+  });
 });
 
 // DELETE
 app.delete('/deck/:id/', function(req, res) {
-
+  let id = req.params.id;
+  Deck.findByIdAndDelete(id, function(err, deck) {
+    if (err) return res.send(500, { error: err });
+    else if (deck === null) return res.send(404, {error: "Deck does not exist"});
+    else return res.json(deck);
+  });
 });
 
-app.delete('deck/:id/', function(req, res) {
-
+app.delete('user/:id/', function(req, res) {
+  let id = req.params.id;
+  User.findByIdAndDelete(id, function(err, user) {
+    if (err) return res.send(500, { error: err });
+    else if (user === null) return res.send(404, {error: "User does not exist"});
+    else return res.json(user);
+  });
 });
-
-
-
 
 
 app.listen(PORT, () => {
