@@ -58,7 +58,7 @@ app.use(cookieParser());
 
 // SERVER ROUTES
 // CREATE
-app.post('/deck/', isAuthenticated, function(req, res) {
+app.post('/api/deck/', isAuthenticated, function(req, res) {
   let deckContent = req.body.content;
   let newDeck = new Deck({content: deckContent, ownerId: req.session.userId});
   newDeck.save(function(err, newDeck) {
@@ -103,13 +103,13 @@ app.get('/auth/google/callback/', passport.authenticate('google', {failureRedire
   res.redirect('/');
 });
 
-app.get('/logout', function (req, res) {
+app.get('/logout/', function (req, res) {
     req.logout();
     req.session = null;
     res.redirect('/');
 });
 
-app.get('/deck/:id/', function(req, res) {
+app.get('/api/deck/:id/', function(req, res) {
   let id = req.params.id;
   Deck.findById(id, function(err, deck) {
     if (err) return res.send(500, {error : err});
@@ -118,7 +118,7 @@ app.get('/deck/:id/', function(req, res) {
   });
 });
 
-app.get('user/:id/', function(req, res) {
+app.get('/api/user/:id/', function(req, res) {
   let id = req.params.id;
   User.findById(id, function(err, user) {
     if (err) return res.send(500, {error : err});
@@ -128,7 +128,7 @@ app.get('user/:id/', function(req, res) {
 });
 
 // UPDATE
-app.put('/deck/:id/', function(req, res) {
+app.put('/api/deck/:id/', function(req, res) {
   let id = req.params.id;
   let content = req.body.content;
   let update = {content: content}
@@ -140,7 +140,7 @@ app.put('/deck/:id/', function(req, res) {
 });
 
 // DELETE
-app.delete('/deck/:id/', function(req, res) {
+app.delete('/api/deck/:id/', function(req, res) {
   let id = req.params.id;
   Deck.findByIdAndDelete(id, function(err, deck) {
     if (err) return res.send(500, { error: err });
@@ -149,7 +149,7 @@ app.delete('/deck/:id/', function(req, res) {
   });
 });
 
-app.delete('user/:id/', function(req, res) {
+app.delete('/api/user/:id/', function(req, res) {
   let id = req.params.id;
   User.findByIdAndDelete(id, function(err, user) {
     if (err) return res.send(500, { error: err });
