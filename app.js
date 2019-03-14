@@ -1,5 +1,6 @@
 //https://medium.com/javascript-in-plain-english/full-stack-mongodb-react-node-js-express-js-in-one-simple-app-6cc8ed6de274
 //https://medium.com/@bogna.ka/integrating-google-oauth-with-express-application-f8a4a2cf3fee
+//https://stackoverflow.com/questions/39183392/deploying-nodejs-mongoose-to-heroku
 const mongoose = require("mongoose");
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -61,7 +62,17 @@ app.use(cookieParser());
 // SERVER ROUTES
 // CREATE
 app.post('/deck/', isAuthenticated, function(req, res) {
-
+  // USer is authenticated
+  // get contesnts of req
+  // create document for db
+  // add to db
+  // send new id in response
+  let deckContent = req.body.content;
+  let newDeck = new Deck({content: deckContent, ownerId: req.session.userId});
+  newDeck.save(function(err, newDeck) {
+    if (err) return res.status(500).end("Error");
+  });
+  return res.json(newDeck._id);
 });
 
 // READ
@@ -89,6 +100,14 @@ app.get('/auth/google/callback/', passport.authenticate('google', {failureRedire
   req.session.token = req.user.token;
   // Add the user to the DB
   let email = req.user.profile.email;
+  let googleId = req.user.profile.id;
+  let update = {"$set": {email: email, googleId: googleId}}
+  let option = {new: true, upsert: true};
+  User.findOneandUpdate({email: email}, update, option).exec(function(err, user) {
+    if (err) return res.send(500, { error: err });
+    // set details:
+    req.session.userId = user._id;
+  })
   res.redirect('/');
 });
 
