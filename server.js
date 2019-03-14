@@ -38,19 +38,21 @@ app.get('/api/create-room/', (req, res) => {
         });
 
         socket.on('disconnect', () => {
-            games[roomId] = games[roomId].filter((username) => {
-                username != socket.username;
-            });
-            if (games[roomId].length == 0) {
-                // lobby is empty so remove it
-                delete games[roomId];
-                // removes the namespace https://stackoverflow.com/questions/26400595/socket-io-how-do-i-remove-a-namespace
-                const connectedSockets = Object.keys(lobby.connected); // Get Object with Connected SocketIds as properties
-                connectedSockets.forEach(socketId => {
-                    lobby.connected[socketId].disconnect(); // Disconnect Each socket
+            if (games[roomId]) {
+                games[roomId] = games[roomId].filter((username) => {
+                    username != socket.username;
                 });
-                lobby.removeAllListeners();
-                delete io.nsps[lobby];
+                if (games[roomId].length == 0) {
+                    // lobby is empty so remove it
+                    delete games[roomId];
+                    // removes the namespace https://stackoverflow.com/questions/26400595/socket-io-how-do-i-remove-a-namespace
+                    const connectedSockets = Object.keys(lobby.connected); // Get Object with Connected SocketIds as properties
+                    connectedSockets.forEach(socketId => {
+                        lobby.connected[socketId].disconnect(); // Disconnect Each socket
+                    });
+                    lobby.removeAllListeners();
+                    delete io.nsps[lobby];
+                }
             }
         });
     });

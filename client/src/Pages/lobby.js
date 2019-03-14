@@ -28,7 +28,9 @@ class Lobby extends React.Component {
         }
       });
       this.lobby.on('player joined', (username) => {
-        this.setState(this.state.otherPlayers.push(username));
+        let otherPlayers = this.state.otherPlayers;
+        otherPlayers.push(username);
+        this.setState({otherPlayers: otherPlayers});
       });
       this.lobby.on('start game', () => {
         // TODO: prepare for game
