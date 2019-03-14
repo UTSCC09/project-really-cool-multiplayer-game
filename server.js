@@ -92,32 +92,30 @@ app.get('/auth/google/', passport.authenticate('google', {
 }));
 
 app.get('/auth/google/callback/', passport.authenticate('google', {failureRedirect: '/' }), function (req, res) {
+  // Save current token in session
   req.session.token = req.user.token;
   // Add the user to the DB
-  let email = req.user.profile.email;
-  let googleId = req.user.profile.id;
-  let givenName = req.user.profile.name.givenName;
-  let familyName = req.user.profile.name.familyName;
-
   let update = {
     token: req.user.token,
-    email: email,
-    googleId: googleId,
-    givenName: givenName,
-    familyName: familyName
+    email: req.user.profile.email,
+    googleId: req.user.profile.id,
+    givenName: req.user.profile.name.givenName,
+    familyName: req.user.profile.name.familyName
   }
   let option = {new: true, upsert: true, setDefaultOnInsert: true};
 
   User.findOneAndUpdate({googleId: googleId}, update, option).exec(function(err, user) {
     if (err) return res.send(500, { error: err });
-    // set details:
-    req.session.userId = user._id;
   })
   res.redirect('/');
 });
 
 app.get('/logout/', function (req, res) {
     req.logout();
+    let update = {token: ""}
+    User.findOneAndUpdate({token: req.session.token}, update, function(err, user) {
+      if (err) return res.send(500, { error: err });
+    })
     req.session = null;
     res.redirect('/');
 });
@@ -134,6 +132,15 @@ app.get('/api/deck/:id/', function(req, res) {
 app.get('/api/user/:id/', function(req, res) {
   let id = req.params.id;
   User.findById(id, function(err, user) {
+    if (err) return res.send(500, {error : err});
+    else if (user === null) return res.send(404, {error: 'User not found'});
+    else return res.json(user);
+  });
+});
+
+app.get('/api/user/token/:token/', function(req, res) {
+  let token = req.params.id;
+  User.findOne({token: token}, function(err, user) {
     if (err) return res.send(500, {error : err});
     else if (user === null) return res.send(404, {error: 'User not found'});
     else return res.json(user);
