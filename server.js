@@ -15,7 +15,10 @@ const cookieSession = require('cookie-session');
 //DB stuff
 const userScheme = new mongoose.Schema({
   googleId: String,
-  email: String
+  email: String,
+  token: String,
+  givenName: String,
+  familyName: String
 });
 
 const instructionScheme = new mongoose.Schema({
@@ -41,7 +44,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const router = express.Router();
 var isAuthenticated = function(req, res, next) {
-  if (!req.session.token) return res.status(401).end("access denied");
+  if (!req.session.token) return res.send(401, {error: "Access denied"});
   next();
 };
 
@@ -62,7 +65,7 @@ app.post('/api/deck/', isAuthenticated, function(req, res) {
   let deckContent = req.body.content;
   let newDeck = new Deck({content: deckContent, ownerId: req.session.userId});
   newDeck.save(function(err, newDeck) {
-    if (err) return res.status(500).end("Error");
+    if (err) return res.send(500, {error: err});
   });
   return res.json(newDeck._id);
 });
@@ -89,28 +92,37 @@ app.get('/auth/google/', passport.authenticate('google', {
 }));
 
 app.get('/auth/google/callback/', passport.authenticate('google', {failureRedirect: '/' }), function (req, res) {
+  // Save current token in session
   req.session.token = req.user.token;
   // Add the user to the DB
-  let email = req.user.profile.email;
-  let googleId = req.user.profile.id;
-  let update = {"$set": {email: email, googleId: googleId}}
-  let option = {new: true, upsert: true};
-  User.findOneAndUpdate({email: email}, update, option).exec(function(err, user) {
+  let update = {
+    token: req.user.token,
+    email: req.user.profile.email,
+    googleId: req.user.profile.id,
+    givenName: req.user.profile.name.givenName,
+    familyName: req.user.profile.name.familyName
+  }
+  let option = {new: true, upsert: true, setDefaultOnInsert: true};
+
+  User.findOneAndUpdate({googleId: googleId}, update, option).exec(function(err, user) {
     if (err) return res.send(500, { error: err });
-    // set details:
-    req.session.userId = user._id;
   })
   res.redirect('/');
 });
 
 app.get('/logout/', function (req, res) {
     req.logout();
+    let update = {token: ""}
+    User.findOneAndUpdate({token: req.session.token}, update, function(err, user) {
+      if (err) return res.send(500, { error: err });
+    })
     req.session = null;
     res.redirect('/');
 });
 
 app.get('/api/deck/:id/', function(req, res) {
-  let id = req.params.id;
+  let id = Number(req.params.id);
+  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
   Deck.findById(id, function(err, deck) {
     if (err) return res.send(500, {error : err});
     else if (user === null) return res.send(404, {error: 'Deck not found'});
@@ -119,8 +131,18 @@ app.get('/api/deck/:id/', function(req, res) {
 });
 
 app.get('/api/user/:id/', function(req, res) {
-  let id = req.params.id;
+  let id = Number(req.params.id);
+  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
   User.findById(id, function(err, user) {
+    if (err) return res.send(500, {error : err});
+    else if (user === null) return res.send(404, {error: 'User not found'});
+    else return res.json(user);
+  });
+});
+
+app.get('/api/user/token/:token/', function(req, res) {
+  let token = req.params.token;
+  User.findOne({token: token}, function(err, user) {
     if (err) return res.send(500, {error : err});
     else if (user === null) return res.send(404, {error: 'User not found'});
     else return res.json(user);
@@ -129,7 +151,8 @@ app.get('/api/user/:id/', function(req, res) {
 
 // UPDATE
 app.put('/api/deck/:id/', function(req, res) {
-  let id = req.params.id;
+  let id = Number(req.params.id);
+  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
   let content = req.body.content;
   let update = {content: content}
   Deck.findByIdAndUpdate(id, update, function(err, deck) {
@@ -141,7 +164,8 @@ app.put('/api/deck/:id/', function(req, res) {
 
 // DELETE
 app.delete('/api/deck/:id/', function(req, res) {
-  let id = req.params.id;
+  let id = Number(req.params.id);
+  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
   Deck.findByIdAndDelete(id, function(err, deck) {
     if (err) return res.send(500, { error: err });
     else if (deck === null) return res.send(404, {error: "Deck does not exist"});
@@ -150,7 +174,8 @@ app.delete('/api/deck/:id/', function(req, res) {
 });
 
 app.delete('/api/user/:id/', function(req, res) {
-  let id = req.params.id;
+  let id = Number(req.params.id);
+  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
   User.findByIdAndDelete(id, function(err, user) {
     if (err) return res.send(500, { error: err });
     else if (user === null) return res.send(404, {error: "User does not exist"});
