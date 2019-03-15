@@ -4,8 +4,9 @@ import io from 'socket.io-client';
 class Lobby extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {otherPlayers: [], roomOwner: false};
+    this.state = {otherPlayers: [], roomOwner: false, gameState: {}};
     this.startGame = this.startGame.bind(this);
+    this.setGameState = this.setGameState.bind(this);
     let params = new URLSearchParams(window.location.search);
     let roomId = params.get('id');
     fetch(`/api/game/${roomId}`).then((response) => {
@@ -32,8 +33,9 @@ class Lobby extends React.Component {
         otherPlayers.push(username);
         this.setState({otherPlayers: otherPlayers});
       });
-      this.lobby.on('start game', () => {
+      this.lobby.on('start game', (gameState) => {
         // TODO: prepare for game
+        this.setGameState(gameState);
       });
       // TODO: replace with username
       this.lobby.emit('join', Math.random().toString(36).slice(2));
@@ -42,6 +44,10 @@ class Lobby extends React.Component {
 
   startGame() {
     this.lobby.emit('start game');
+  }
+
+  setGameState(gameState) {
+    this.setState({gameState: gameState});
   }
 
   render() {

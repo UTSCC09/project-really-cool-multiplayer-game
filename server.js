@@ -193,7 +193,8 @@ let games = {};
 
 app.get('/api/create-room/', (req, res) => {
     let roomId = crypto.randomBytes(5).toString('hex');
-    games[roomId] = { players: [] };
+    games[roomId] = { public: {}, players: [] };
+
     let lobby = io.of(roomId);
     lobby.on('connection', (socket) => {
         if (games[roomId].players.length >= 8) {
@@ -205,19 +206,43 @@ app.get('/api/create-room/', (req, res) => {
         socket.on('join', (username) => {
             socket.username = username;
             socket.emit('player list', games[roomId].players);
-            games[roomId].players.push(username);
+            games[roomId].players.push({ username: username, socketId: socket.id });
             socket.broadcast.emit('player joined', username);
+
         });
 
         socket.on('start game', () => {
-            // TODO: actually start game
-            lobby.emit('start game', {});
+          // TODO: actually start game
+          // lobby.emit('start game', {});
+
+          // Decide what game to play/ what deck to use here
+          // Default cards against humanity is default here
+          // fetch (get deck from database here)
+
+          // Host decided settings are set here for the game
+          games[roomId].public = {
+            blackCard: String,
+            cardCsar: String,
+            settings: {},
+            players: [];  // names and scores for each player
+          }
+          let deck = Array.from(Array(200).keys()); // cause we havent made decks yet
+          let initialCards = 7;
+
+          // Deal cards to eahc player
+          for (player in games[roomId].players) {
+            player[cards] = [];
+            for (let i = 0; i < initialCards; i++) {
+              player[cards].push(deck.pop());
+            }
+            io.to(player.socketId).emit('start game', {public: games[roomId].public, private: player});
+          }
         });
 
         socket.on('disconnect', () => {
             if (games[roomId].players) {
-                games[roomId].players = games[roomId].players.filter((username) => {
-                    username != socket.username;
+                games[roomId].players = games[roomId].players.filter((player) => {
+                    player.username != socket.username;
                 });
                 if (games[roomId].players.length == 0) {
                     // lobby is empty so remove it
