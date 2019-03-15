@@ -193,19 +193,19 @@ let games = {};
 
 app.get('/api/create-room/', (req, res) => {
     let roomId = crypto.randomBytes(5).toString('hex');
-    games[roomId] = [];
+    games[roomId] = { players: [] };
     let lobby = io.of(roomId);
     lobby.on('connection', (socket) => {
-        if (games[roomId].length >= 8) {
+        if (games[roomId].players.length >= 8) {
             // room is full
             socket.emit('room full');
             socket.disconnect()
         }
-    
+
         socket.on('join', (username) => {
             socket.username = username;
-            socket.emit('player list', games[roomId]);
-            games[roomId].push(username);
+            socket.emit('player list', games[roomId].players);
+            games[roomId].players.push(username);
             socket.broadcast.emit('player joined', username);
         });
 
@@ -215,13 +215,13 @@ app.get('/api/create-room/', (req, res) => {
         });
 
         socket.on('disconnect', () => {
-            if (games[roomId]) {
-                games[roomId] = games[roomId].filter((username) => {
+            if (games[roomId].players) {
+                games[roomId].players = games[roomId].players.filter((username) => {
                     username != socket.username;
                 });
-                if (games[roomId].length == 0) {
+                if (games[roomId].players.length == 0) {
                     // lobby is empty so remove it
-                    delete games[roomId];
+                    delete games[roomId].players;
                     // removes the namespace https://stackoverflow.com/questions/26400595/socket-io-how-do-i-remove-a-namespace
                     const connectedSockets = Object.keys(lobby.connected); // Get Object with Connected SocketIds as properties
                     connectedSockets.forEach(socketId => {
