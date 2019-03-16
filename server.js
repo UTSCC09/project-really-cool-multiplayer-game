@@ -193,25 +193,28 @@ let games = {};
 
 app.get('/api/create-room/', (req, res) => {
     let roomId = crypto.randomBytes(5).toString('hex');
-    games[roomId] = { public: {}, players: [] };
+    let currentGame = gameState[roomId];
+    currentGame = { public: {}, players: [] };
 
     let lobby = io.of(roomId);
     lobby.on('connection', (socket) => {
-        if (games[roomId].players.length >= 8) {
+
+        if (currentGame.players.length >= 8) {
             // room is full
             socket.emit('room full');
             socket.disconnect()
         }
 
         socket.on('join', (username) => {
+          // TODO:  change function if they're joining mid-game
             socket.username = username;
-            socket.emit('player list', games[roomId].players);
-            games[roomId].players.push({ username: username, socketId: socket.id });
+            socket.emit('player list', currentGame.players);
+            currentGame.players.push({ username: username, socketId: socket.id });
             socket.broadcast.emit('player joined', username);
 
         });
 
-        socket.on('start game', () => {
+        socket.once('start game', () => {
           // TODO: actually start game
           // lobby.emit('start game', {});
 
@@ -220,33 +223,108 @@ app.get('/api/create-room/', (req, res) => {
           // fetch (get deck from database here)
 
           // Host decided settings are set here for the game
-          games[roomId].public = {
-            blackCard: String,
-            cardCsar: String,
-            settings: {},
-            players: [];  // names and scores for each player
+
+          currentGame.public = {
+            blackCard: "",
+            cardCsar: currentGame.players[0].username,
+            settings: {winningScore: 5},
+            players: [],  // {username, score}
+            whiteCards: [],
+            winner: '',
           }
+          // server only
+          currentGame.private = {
+            whiteCards: [], // {username, content}
+            cardCsar: currentGame.players[0];
+          }
+          // TODO implement the deck
           let deck = Array.from(Array(200).keys()); // cause we havent made decks yet
           let initialCards = 7;
+          currentGame.public.players = currentGame.players.map((player) => {
+            return { player: player.username, score: 0 };
+          });
 
-          // Deal cards to eahc player
-          for (player in games[roomId].players) {
-            player[cards] = [];
-            for (let i = 0; i < initialCards; i++) {
-              player[cards].push(deck.pop());
+          function updateClientState(eventName) {
+            for (player of currentGame.players) {
+              io.to(player.socketId).emit(eventName, {public: currentGame.public, private: player});
             }
-            io.to(player.socketId).emit('start game', {public: games[roomId].public, private: player});
           }
+
+          // Deal cards to each player
+          // let csar = Math.floor(Math.random() * Math.floor(players.length));
+          for (player of currentGame.players) {
+            player.cards = [];
+            for (let i = 0; i < initialCards; i++) {
+              player.cards.push(deck.pop());
+            }
+            io.to(player.socketId).emit('start game', {public: currentGame.public, private: player});
+          }
+          currentGame.public.blackCard = deck[0]; // TODO: select blackcard
+          // lobby.emit('black card', {public: currentGame.public});
+          function gameRound() {
+            updateClientState('black card');
+            for (player of currentGame.players) {
+              if (player.username !== currentGame.public.cardCsar) {
+                io.to(player.socketId).once('white card submit',(submittedCard) => {
+                  //put the white card inthe rpiuavete array
+                  currentGame.private.whiteCards.push(submittedCard);
+                  if (currentGame.private.whiteCards.length === currentGame.players.length - 1) {
+                    //get ccard csar to selecto
+                    currentGame.public.whiteCards = currentGame.private.whiteCards;
+                    // lobby.emit('reveal white card', {currentGame.public});
+                    updateClientState('reveal white cards');
+                    io.to(currentGame.private.cardCsar.socketId).once('card selected', (winningCard) => {
+                      // award points, start next round
+                      // get winner name
+                      let winner = winningCard.username;
+                      let idx = currentGame.public.players.findIndex((player) => {
+                        return player.username === winner;
+                      });
+                      currentGame.public.players[idx].score++;
+                      if (currentGame.public.players[idx].score === currentGame.public.settings.winningScore) {
+                        currentGame.public.winner = currentGame.public.players[idx];
+                        updateClientState('game over');
+                        // lobby.emit('game over', {currentGame.public.players[idx]});
+                        return; //TODO play againstuff here
+                      }
+
+                      //restart the round new round round
+                      // wipe everything
+                      //eradicate whites
+                      // check game over
+                      currentGame.private.whiteCards = [];
+                      currentGame.public.whiteCards = [];
+                      // deal cards
+                      for (player of currentGame.players) {
+                        if (player.username !== currentGame.public.cardCsar) {
+                          player.cards.push(deck.pop()); //TODO implement
+                        }
+                      }
+
+                      let cardCsarIdx = (currentGame.players.findIndex((player) => {
+                        return currentGame.private.cardCsar.username == player.username;
+                      });
+                      currentGame.private.cardCsar = currentGame.players[(cardCsarIdx + 1) % currentGame.players.length];
+                      currentGame.public.cardCsar = currentGame.private.cardCsar.username;
+                      currentGame.public.blackCard = deck[0]; //TODO MAKE AN ACTUALLY DECK
+                      gameRound();
+                    });
+                  }
+                });
+              }
+            }
+          }
+          gameRound();
         });
 
         socket.on('disconnect', () => {
-            if (games[roomId].players) {
-                games[roomId].players = games[roomId].players.filter((player) => {
+            if (currentGame.players) {
+                currentGame.players = currentGame.players.filter((player) => {
                     player.username != socket.username;
                 });
-                if (games[roomId].players.length == 0) {
+                if (currentGame.players.length == 0) {
                     // lobby is empty so remove it
-                    delete games[roomId].players;
+                    delete currentGame.players;
                     // removes the namespace https://stackoverflow.com/questions/26400595/socket-io-how-do-i-remove-a-namespace
                     const connectedSockets = Object.keys(lobby.connected); // Get Object with Connected SocketIds as properties
                     connectedSockets.forEach(socketId => {
@@ -260,6 +338,7 @@ app.get('/api/create-room/', (req, res) => {
     });
     res.send(roomId);
 });
+
 
 // returns whether a game with that
 app.get('/api/game/:id', (req, res) => {

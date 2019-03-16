@@ -4,9 +4,10 @@ import io from 'socket.io-client';
 class Lobby extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {otherPlayers: [], roomOwner: false, gameState: {}};
+    this.state = {otherPlayers: [], roomOwner: false, gameState: {}, phase: 'lobby'};
     this.startGame = this.startGame.bind(this);
-    this.setGameState = this.setGameState.bind(this);
+    this.selectWhiteCard = this.selectWhiteCard.bind(this);
+    this.selectWinner = this.selectWinner.bind(this);
     let params = new URLSearchParams(window.location.search);
     let roomId = params.get('id');
     fetch(`/api/game/${roomId}`).then((response) => {
@@ -16,6 +17,7 @@ class Lobby extends React.Component {
         // TODO: room doesn't exist
         return;
       }
+      // TODO: read this from some config file so when we deploy on heroku we don't have to change it each time
       this.lobby = io.connect(`http://localhost:5000/${roomId}`);
       this.lobby.on('room full', () => {
         // TODO: room is full
@@ -35,7 +37,18 @@ class Lobby extends React.Component {
       });
       this.lobby.on('start game', (gameState) => {
         // TODO: prepare for game
-        this.setGameState(gameState);
+        this.setState({gameState: gameState});
+        this.on('black card', (gameState) => {
+          let phase = gameState.public.cardCsar === this.state.username ? 'waiting' : 'picking'
+          this.setState({gameState: gameState, phase: phase});
+        });
+        this.on('reveal white cards', (gameState) => {
+          let phase = gameState.public.cardCsar === this.state.username ? 'judging' : 'waiting'
+          this.setState({gameState:  gameState, phase: phase});
+        });
+        this.on('game over', (gameState) => {
+          this.setState({gameState: gamestate, phase: 'game over');
+        });
       });
       // TODO: replace with username
       this.lobby.emit('join', Math.random().toString(36).slice(2));
@@ -46,8 +59,12 @@ class Lobby extends React.Component {
     this.lobby.emit('start game');
   }
 
-  setGameState(gameState) {
-    this.setState({gameState: gameState});
+  selectWhiteCard(card) {
+    this.lobby.emit('white card submit', card);
+  }
+
+  selectWinner(card) {
+    this.lobby.emit('card selected', card);
   }
 
   render() {
