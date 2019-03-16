@@ -235,7 +235,7 @@ app.get('/api/create-room/', (req, res) => {
           // server only
           currentGame.private = {
             whiteCards: [], // {username, content}
-            cardCsar: currentGame.players[0];
+            cardCsar: currentGame.players[0]
           }
           // TODO implement the deck
           // TODO, pull deck from database and do thing
@@ -263,7 +263,7 @@ app.get('/api/create-room/', (req, res) => {
               player.cards.push(whiteDeck.shift());
             }
             io.to(player.socketId).emit('start game', {public: currentGame.public, private: player});
-          }=
+          }
           currentGame.public.blackCard = blackDeck.shift();
           function gameRound() {
             updateClientState('black card');
@@ -305,7 +305,7 @@ app.get('/api/create-room/', (req, res) => {
                         }
                       }
 
-                      let cardCsarIdx = (currentGame.players.findIndex((player) => {
+                      let cardCsarIdx = currentGame.players.findIndex((player) => {
                         return currentGame.private.cardCsar.username == player.username;
                       });
                       currentGame.private.cardCsar = currentGame.players[(cardCsarIdx + 1) % currentGame.players.length];
