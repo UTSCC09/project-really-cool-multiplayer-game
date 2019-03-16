@@ -74,18 +74,13 @@ app.post('/api/deck/', isAuthenticated, function(req, res) {
 });
 
 // READ
-app.get('/', function (req, res) {
+app.get('/', function (req, res, next) {
   if (req.session.token) {
     res.cookie('token', req.session.token);
-    res.json({
-      status: 'session cookie set'
-    });
   } else {
     res.cookie('token', '');
-    res.json({
-      status: 'session cookie not set'
-    });
   }
+  next();
 });
 
 // Google authentication
@@ -193,11 +188,12 @@ let games = {};
 
 app.get('/api/create-room/', (req, res) => {
     let roomId = crypto.randomBytes(5).toString('hex');
-    let currentGame = gameState[roomId];
-    currentGame = { public: {}, players: [] };
+    console.log(`new room ${roomId}`)
+    let currentGame = { public: {}, players: [] };
 
     let lobby = io.of(roomId);
     lobby.on('connection', (socket) => {
+      console.log("person connected")
 
         if (currentGame.players.length >= 8) {
             // room is full
@@ -206,15 +202,18 @@ app.get('/api/create-room/', (req, res) => {
         }
 
         socket.on('join', (username) => {
+          console.log(`${username} joined ${roomId}`)
           // TODO:  change function if they're joining mid-game
             socket.username = username;
-            socket.emit('player list', currentGame.players);
+            socket.emit('player list', currentGame.players.map((player) => {return player.username}));
+            console.log(`${username}: ${socket.id}`)
             currentGame.players.push({ username: username, socketId: socket.id });
             socket.broadcast.emit('player joined', username);
 
         });
 
         socket.once('start game', () => {
+          console.log(`start game: ${roomId}`)
           // TODO: actually start game
           // lobby.emit('start game', {});
 
@@ -251,7 +250,7 @@ app.get('/api/create-room/', (req, res) => {
 
           function updateClientState(eventName) {
             for (player of currentGame.players) {
-              io.to(player.socketId).emit(eventName, {public: currentGame.public, private: player});
+              lobby.to(`${player.socketId}`).emit(eventName, {public: currentGame.public, private: player});
             }
           }
 
@@ -262,7 +261,9 @@ app.get('/api/create-room/', (req, res) => {
             for (let i = 0; i < initialCards; i++) {
               player.cards.push(whiteDeck.shift());
             }
-            io.to(player.socketId).emit('start game', {public: currentGame.public, private: player});
+            console.log(`${player.username} gets cards: ${player.cards}`)
+            console.log(`sending to ${player.socketId}`)
+            lobby.to(player.socketId).emit('start game', {public: currentGame.public, private: player});
           }
           currentGame.public.blackCard = blackDeck.shift();
           function gameRound() {
@@ -324,7 +325,7 @@ app.get('/api/create-room/', (req, res) => {
         socket.on('disconnect', () => {
             if (currentGame.players) {
                 currentGame.players = currentGame.players.filter((player) => {
-                    player.username != socket.username;
+                  return player.username !== socket.username;
                 });
                 if (currentGame.players.length == 0) {
                     // lobby is empty so remove it
@@ -341,12 +342,6 @@ app.get('/api/create-room/', (req, res) => {
         });
     });
     res.send(roomId);
-});
-
-
-// returns whether a game with that
-app.get('/api/game/:id', (req, res) => {
-    res.send(!!games[req.params.id]);
 });
 
 app.get("*", (req, res) => {
