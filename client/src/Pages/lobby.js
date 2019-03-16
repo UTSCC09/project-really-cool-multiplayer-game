@@ -47,7 +47,7 @@ class Lobby extends React.Component {
           this.setState({gameState:  gameState, phase: phase});
         });
         this.on('game over', (gameState) => {
-          this.setState({gameState: gamestate, phase: 'game over');
+          this.setState({gameState: gamestate, phase: 'game over'});
         });
       });
       // TODO: replace with username
