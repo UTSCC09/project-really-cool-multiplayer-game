@@ -1,11 +1,12 @@
 import React from 'react';
-import PaperScope from 'paper'
+import PaperScope from 'paper';
+import PaperCards from '../gameScripts/card';
 
 class Game extends React.Component {
   constructor(props) {
     super(props);
 
-    this.paper = PaperScope
+    PaperScope.install(this)
   }
 
   render() {
@@ -16,13 +17,12 @@ class Game extends React.Component {
     )
   }
   componentDidMount() {
-    this.paper.install(window);
     window.onload = function() {
-      this.paper.setup('gameCanvas');
-      var path = new this.paper.Path.Rectangle([75, 75], [100, 100]);
+      paper.setup('gameCanvas');
+      var path = new Path.Rectangle([75, 75], [100, 100]);
       path.strokeColor = 'black';
   
-      this.paper.view.onFrame = function(event) {
+      view.onFrame = function(event) {
         // On each frame, rotate the path by 3 degrees:
         path.rotate(3);
       }

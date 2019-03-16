@@ -16,3 +16,7 @@
 //     check();
 //     return this.content=lines.join('\n');
 // }
+
+class PaperCards {
+
+}
