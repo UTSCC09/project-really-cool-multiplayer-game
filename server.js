@@ -238,7 +238,12 @@ app.get('/api/create-room/', (req, res) => {
             cardCsar: currentGame.players[0];
           }
           // TODO implement the deck
+          // TODO, pull deck from database and do thing
           let deck = Array.from(Array(200).keys()); // cause we havent made decks yet
+          let whiteDeck = Array.from(Array(200).keys());
+          let blackDeck = Array.from(Array(200).keys());
+          //TODO shuffle decks`
+
           let initialCards = 7;
           currentGame.public.players = currentGame.players.map((player) => {
             return { player: player.username, score: 0 };
@@ -255,12 +260,11 @@ app.get('/api/create-room/', (req, res) => {
           for (player of currentGame.players) {
             player.cards = [];
             for (let i = 0; i < initialCards; i++) {
-              player.cards.push(deck.pop());
+              player.cards.push(whiteDeck.shift());
             }
             io.to(player.socketId).emit('start game', {public: currentGame.public, private: player});
-          }
-          currentGame.public.blackCard = deck[0]; // TODO: select blackcard
-          // lobby.emit('black card', {public: currentGame.public});
+          }=
+          currentGame.public.blackCard = blackDeck.shift();
           function gameRound() {
             updateClientState('black card');
             for (player of currentGame.players) {
@@ -297,7 +301,7 @@ app.get('/api/create-room/', (req, res) => {
                       // deal cards
                       for (player of currentGame.players) {
                         if (player.username !== currentGame.public.cardCsar) {
-                          player.cards.push(deck.pop()); //TODO implement
+                          player.cards.push(whiteDeck.shift()); //TODO implement
                         }
                       }
 
@@ -306,7 +310,7 @@ app.get('/api/create-room/', (req, res) => {
                       });
                       currentGame.private.cardCsar = currentGame.players[(cardCsarIdx + 1) % currentGame.players.length];
                       currentGame.public.cardCsar = currentGame.private.cardCsar.username;
-                      currentGame.public.blackCard = deck[0]; //TODO MAKE AN ACTUALLY DECK
+                      currentGame.public.blackCard = blackDeck.shift(); //TODO MAKE AN ACTUALLY DECK
                       gameRound();
                     });
                   }
