@@ -34,9 +34,15 @@ const deckScheme = new mongoose.Schema({
   cards: String,
 });
 
+const gameScheme = new mongoose.Schema({
+  decks: {},
+});
+
 var User = mongoose.model('User', userScheme);
 var Instruction = mongoose.model('Instruction', instructionScheme);
 var Deck = mongoose.model('Deck', deckScheme);
+var Game = mongoose.model('Game', gameScheme);
+
 
 mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/db", { useNewUrlParser: true });
 let db = mongoose.connection;
@@ -201,7 +207,7 @@ app.get('/api/create-room/', (req, res) => {
             socket.emit('room full');
             socket.disconnect()
         }
-    
+
         socket.on('join', (username) => {
             socket.username = username;
             socket.emit('player list', games[roomId]);
