@@ -302,7 +302,7 @@ app.get('/api/create-room/', (req, res) => {
 
         });
 
-        socket.once('start game', (settings) => {
+        socket.once('start game', async (settings) => {
           console.log(`start game: ${roomId}`)
           // TODO: actually start game
           // lobby.emit('start game', {});
@@ -314,14 +314,8 @@ app.get('/api/create-room/', (req, res) => {
           // Host decided settings are set here for the game
 
           // Settings will have game in it
-          // let gameId = "5c8dcad255c6482c14aa7326";
-          // let game = await function() {
-          //   Game.findById(gameId, function(err, doc) { //make promise
-          //     if (err) console.log("jhfkggfkgfkgfhg");
-          //     game = doc;
-          //     console.log("GAME", game);
-          //   });
-          // }
+          let gameId = "5c8dcad255c6482c14aa7326"; // settings.gameId
+          let game = await Game.findById(gameId);
 
           currentGame.public = {
             blackCard: "",
@@ -340,9 +334,14 @@ app.get('/api/create-room/', (req, res) => {
           }
           // TODO implement the deck
           // TODO, pull deck from database and do thing
-          let deck = Array.from(Array(200).keys()); // cause we havent made decks yet
-          let whiteDeck = Array.from(Array(200).keys());
-          let blackDeck = Array.from(Array(200).keys());
+          // let deck = Array.from(Array(200).keys()); // cause we havent made decks yet
+          // let whiteDeck = Array.from(Array(200).keys());
+          // let blackDeck = Array.from(Array(200).keys());
+          let whiteDeck = game.decks.get('whiteDeck').cards;
+          let blackDeck = game.decks.get('blackDeck').cards;
+
+
+
           //TODO shuffle decks`
 
           let initialCards = 7;
