@@ -161,6 +161,16 @@ app.get('/api/games/list/', function(req, res) {
   });
 });
 
+app.get('/api/games/:id/', function(req, res) {
+  let id = Number(req.params.id);
+  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
+  Game.findById(id, function(err, game) {
+    if (err) return res.send(500, {error: err});
+    else if (game === null) return res.send(404, {error: 'Game not found'});
+    else return res.json(game);
+  });
+});
+
 // UPDATE
 app.put('/api/deck/:id/', function(req, res) {
   let id = Number(req.params.id);
@@ -236,6 +246,8 @@ app.get('/api/create-room/', (req, res) => {
           // fetch (get deck from database here)
 
           // Host decided settings are set here for the game
+
+          // Settings will have game in it
 
           currentGame.public = {
             blackCard: "",
