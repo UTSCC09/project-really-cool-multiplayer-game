@@ -15,11 +15,14 @@ const CARD_HEIGHT = 175;
 const CARD_DEFAULT_COLOR = '#e9e9ff'
 const CARD_DEFAULT_TEXT_COLOR = 'black'
 const CARD_MAX_CONTENT_SIZE = 25;
-// 
+// test event
+let testEvent = "test";
+let testGameState = {};
 
 
 function drawCard(x, y, cardContent, cardColor, textColor) {
   return () => {
+    console.log('ME TOO BUDDY');
     let paper = window.paper;
     var cardCorner = new paper.Point(x, y);
       
@@ -35,7 +38,30 @@ function drawCard(x, y, cardContent, cardColor, textColor) {
   };
 }
 
-// function render
+function renderScreen(event, gameState) {
+  return () => {
+    let paper = window.paper;
+    paper.project.clear();
+    switch (event) {
+      case "test":
+      console.log('HEY IM WALKIN');
+        // draw table
+        let TLCorner = new paper.Point(TABLE_PADDING_X, TABLE_PADDING_Y)
+        let BRCorner = new paper.Point(
+            (paper.view.size.width)-TABLE_PADDING_X, 
+            (paper.view.size.height)-TABLE_PLAYER_SPACE)
+            let table = new paper.Path.Rectangle(TLCorner, BRCorner);
+        table.fillColor = TABLE_FILL_COLOR;
+        table.strokeColor = TABLE_STROKE_COLOR;
+        table.sendToBack();
+        // draw test card
+        drawCard(0,0,"meme meme big boys").call();
+        break;
+      default:
+        console.warn('Unknown event "' + event + '" passed.');
+    }
+  };
+}
 
 
 class Game extends React.Component {
@@ -80,7 +106,7 @@ class Game extends React.Component {
     return(
       <div className="game">
         <canvas id="gameCanvas"></canvas>
-        <button onClick={drawCard(200, 200, "hello")}>click</button>
+        <button onClick={renderScreen(testEvent, testGameState)}>click</button>
       </div>
     )
   }
