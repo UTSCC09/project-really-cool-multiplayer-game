@@ -34,9 +34,15 @@ const deckScheme = new mongoose.Schema({
   cards: String,
 });
 
+const gameScheme = new mongoose.Schema({
+  name: String
+  decks: {type: Map, of: deckScheme}
+});
+
 var User = mongoose.model('User', userScheme);
 var Instruction = mongoose.model('Instruction', instructionScheme);
 var Deck = mongoose.model('Deck', deckScheme);
+var Game = mongoose.model('Game', gameScheme);
 
 mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/db", { useNewUrlParser: true });
 let db = mongoose.connection;
@@ -144,6 +150,14 @@ app.get('/api/user/token/:token/', function(req, res) {
     if (err) return res.send(500, {error : err});
     else if (user === null) return res.send(404, {error: 'User not found'});
     else return res.json(user);
+  });
+});
+
+app.get('/api/games/list/', function(req, res) {
+  Game.find({}, function(err, games) {
+    if (err) return res.send(500, {error: err});
+    else if (games.length === 0) return res.send(404, {error: 'No games found'});
+    else return res.json(games);
   });
 });
 
