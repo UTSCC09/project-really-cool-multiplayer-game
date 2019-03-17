@@ -9,11 +9,9 @@ class App extends Component {
 
     return (
       <BrowserRouter>
-        <div>big boys here to bungalo ;)
           <Route exact path="/" component={Home} />
           <Route path="/lobby" component={Lobby} />
-          <Route path="/gameTest" component={Game} />
-        </div>
+          <Route exact path="/gameTest" component={Game} />
       </BrowserRouter>
     );
   }
