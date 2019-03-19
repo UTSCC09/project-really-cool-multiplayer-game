@@ -383,13 +383,14 @@ app.get('/api/create-room/', (req, res) => {
             for (player of currentGame.players) {
               if (player.username !== currentGame.public.cardCsar) {
                 lobby.connected[player.socketId].once('white card submit',(submittedCard) => {
-                  console.log(`${player.username} selected ${submittedCard}`)
+                  console.log(`${submittedCard.owner} selected ${submittedCard.content}`)
                   // TODO: cards should have ids instead of filtering on content
-                  currentGame.players.find((player) => {
+                  let currPlayer = currentGame.players.find((player) => {
                     return submittedCard.owner === player.username;
-                  }).cards.filter((card) => {
-                    card.content !== submittedCard.content;
-                  })
+                  });
+                  currPlayer.cards = currPlayer.cards.filter((card) => {
+                    return card.content !== submittedCard.content;
+                  });
                   //put the white card in the private array
                   currentGame.private.whiteCards.push(submittedCard);
                   if (currentGame.private.whiteCards.length === currentGame.players.length - 1) {
