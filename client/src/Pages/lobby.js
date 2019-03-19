@@ -14,7 +14,7 @@ class Lobby extends React.Component {
 
     // TODO: read this from some config file so when we deploy on heroku we don't have to change it each time
     console.log("env:", process.env, "URL:", process.env.URL)
-    this.lobby = io.connect(process.env.URL?process.env.URL+roomId:`http://localhost:5000/${roomId}`);
+    this.lobby = io.connect(process.env.REACT_APP_URL+roomId);
     this.lobby.on('room full', () => {
       // TODO: room is full
     });
