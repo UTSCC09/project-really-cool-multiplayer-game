@@ -281,7 +281,8 @@ class Game extends React.Component {
     paper.install(window);
     window.onload = function() {
       paper.setup('gameCanvas');
-      // add text wrapping
+      // add text wrapping (I STOLE THIS FROM STACK EXCHANGE)
+      // TODO: find where i stole this
       paper.PointText.prototype.wordwrap=function(txt,max){
         var lines=[];
         var space=-1;
