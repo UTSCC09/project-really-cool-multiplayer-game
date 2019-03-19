@@ -44,6 +44,7 @@ var Instruction = mongoose.model('Instruction', instructionScheme);
 var Deck = mongoose.model('Deck', deckScheme);
 var Game = mongoose.model('Game', gameScheme);
 
+
 mongoose.connect(process.env.MONGODB_URI || "mongodb://test:test123@ds213896.mlab.com:13896/heroku_nz567lg6", { useNewUrlParser: true });
 let db = mongoose.connection;
 
