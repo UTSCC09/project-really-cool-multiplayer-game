@@ -276,13 +276,15 @@ function renderScreen(gameState) {
 class Game extends React.Component {
   constructor(props) {
     super(props);
+    this.state = {username: this.props.username};
+    this.lobby = this.props.lobby;
     // this.pc = new PaperCards(PaperScope, window);
     let paper = PaperScope;
     paper.install(window);
-    window.onload = function() {
+      console.log(document.getElementById('gameCanvas'));
       paper.setup('gameCanvas');
-      // add text wrapping (I STOLE THIS FROM STACK EXCHANGE)
-      // TODO: find where i stole this
+      // add text wrappinig (I STOLE THIS FROM STACK EXCHANGE)
+      // TODO: find wherei i stole this
       paper.PointText.prototype.wordwrap=function(txt,max){
         var lines=[];
         var space=-1;
@@ -309,13 +311,29 @@ class Game extends React.Component {
       table.fillColor = TABLE_FILL_COLOR;
       table.strokeColor = TABLE_STROKE_COLOR;
       table.sendToBack();
-      }
+      this.lobby.on('black card', (gameState) => {
+        console.log("Got the black card");
+        console.log(gameState);
+        gameState.phase = gameState.public.cardCsar === this.state.username ? 'waiting' : 'picking';
+        renderScreen(gameState).call();
+      });
+      this.lobby.on('reveal white cards', (gameState) => {
+        console.log("reveal the white cards");
+        console.log(gameState);
+        gameState.phase = gameState.public.cardCsar === this.state.username ? 'judging' : 'waiting';
+        renderScreen(gameState).call();
+      });
+      this.lobby.on('game over', (gameState) => {
+        console.log("Game has ended");
+        console.log(gameState);
+        gameState.phase = 'game over';
+        renderScreen(gameState).call();
+      });
   }
 
   render() {
     return(
       <div className="game">
-        <canvas id="gameCanvas"></canvas>
         <button onClick={renderScreen(waitingState)}>waiting</button>
         <button onClick={renderScreen(pickingState)}>picking</button>
         <button onClick={renderScreen(judgingState)}>judging</button>

@@ -357,7 +357,7 @@ app.get('/api/create-room/', (req, res) => {
 
           let initialCards = 7;
           currentGame.public.players = currentGame.players.map((player) => {
-            return { player: player.username, score: 0 };
+            return { username: player.username, score: 0 };
           });
 
           function updateClientState(eventName) {
