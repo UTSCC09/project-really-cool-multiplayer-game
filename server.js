@@ -407,7 +407,7 @@ app.get('/api/create-room/', (req, res) => {
                       });
                       currentGame.public.players[idx].score++;
                       if (currentGame.public.players[idx].score === currentGame.public.settings.winningScore) {
-                        currentGame.public.winner = currentGame.public.players[idx];
+                        currentGame.public.winner = currentGame.public.players[idx].username;
                         updateClientState('game over');
                         // lobby.emit('game over', {currentGame.public.players[idx]});
                         return; //TODO play againstuff here
