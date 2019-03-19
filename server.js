@@ -30,13 +30,19 @@ const instructionScheme = new mongoose.Schema({
 });
 
 const deckScheme = new mongoose.Schema({
-  ownerId: String,
-  cards: String,
+  ownerId: mongoose.Schema.Types.ObjectId,
+  cards: [String],
+});
+
+const gameScheme = new mongoose.Schema({
+  name: String,
+  decks: {type: Map, of: deckScheme}
 });
 
 var User = mongoose.model('User', userScheme);
 var Instruction = mongoose.model('Instruction', instructionScheme);
 var Deck = mongoose.model('Deck', deckScheme);
+var Game = mongoose.model('Game', gameScheme);
 
 mongoose.connect(process.env.MONGODB_URI || "mongodb://test:test123@ds213896.mlab.com:13896/heroku_nz567lg6", { useNewUrlParser: true });
 let db = mongoose.connection;
@@ -61,6 +67,10 @@ app.use(cookieSession({
     keys: ['123']
 }));
 app.use(cookieParser());
+app.use(function(req, res, next) {
+  // console.log("REQUEST: ", req. /);
+  next();
+});
 
 // SERVER ROUTES
 // CREATE
@@ -71,6 +81,37 @@ app.post('/api/deck/', isAuthenticated, function(req, res) {
     if (err) return res.send(500, {error: err});
   });
   return res.json(newDeck._id);
+});
+
+var multer  = require('multer')
+var upload = multer();
+
+app.post('/api/file/', upload.single('file'), function(req, res) {
+  // console.log("asdfasdfasd", req.file);
+  let buffer = req.file.buffer;
+  let cardContent = buffer.toString('utf8').split('\n');
+  // Set This in the card database;
+  // // Make a thing and put it in the database
+  // let d1 = new Deck({ownerId: "5c8a02a89f0f3cbb9a5b75f6", cards: cardContent}); // 5c8dc7c0b6aa482b6f8ac885
+  // let d2 = new Deck({ownerId: "5c8a02a89f0f3cbb9a5b75f6", cards: cardContent}); // 5c8dc89d47e8042ba5673c20
+  // d2.save(function(err, d) {
+  //   if (err) console.log("d2 didnt save help");
+  //   Deck.findById('5c8dc7c0b6aa482b6f8ac885', function(err, black) {
+  //     if (!black) {
+  //
+  //
+  //
+  //
+  //     } else {
+  //       console.log("HELP");
+  //     }
+  //   });
+  // });
+
+
+
+  // console.log(req.file.buffer);
+  res.json(cardContent);
 });
 
 // READ
@@ -95,14 +136,13 @@ app.get('/auth/google/callback/', passport.authenticate('google', {failureRedire
   // Add the user to the DB
   let update = {
     token: req.user.token,
-    email: req.user.profile.email,
+    email: req.user.profile.emails[0].value,
     googleId: req.user.profile.id,
     givenName: req.user.profile.name.givenName,
     familyName: req.user.profile.name.familyName
   }
   let option = {new: true, upsert: true, setDefaultOnInsert: true};
-
-  User.findOneAndUpdate({googleId: googleId}, update, option).exec(function(err, user) {
+  User.findOneAndUpdate({googleId: req.user.profile.id}, update, option).exec(function(err, user) {
     if (err) return res.send(500, { error: err });
   })
   res.redirect('/');
@@ -147,6 +187,24 @@ app.get('/api/user/token/:token/', function(req, res) {
   });
 });
 
+app.get('/api/games/list/', function(req, res) {
+  Game.find({}, function(err, games) {
+    if (err) return res.send(500, {error: err});
+    else if (games.length === 0) return res.send(404, {error: 'No games found'});
+    else return res.json(games);
+  });
+});
+
+app.get('/api/games/:id/', function(req, res) {
+  let id = Number(req.params.id);
+  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
+  Game.findById(id, function(err, game) {
+    if (err) return res.send(500, {error: err});
+    else if (game === null) return res.send(404, {error: 'Game not found'});
+    else return res.json(game);
+  });
+});
+
 // UPDATE
 app.put('/api/deck/:id/', function(req, res) {
   let id = Number(req.params.id);
@@ -183,6 +241,38 @@ app.delete('/api/user/:id/', function(req, res) {
 
 app.use(express.static(path.join(__dirname, "client", "build")));
 
+// // Make a thing and put it in the database
+// let d1 = new Deck({ownerId: "5c8a02a89f0f3cbb9a5b75f6", cards: ["test1-1", "test1-2", "test1-3"]});
+// let d2 = new Deck({ownerId: "5c8a02a89f0f3cbb9a5b75f6", cards: ["test2-1", "test2-2", "test2-3"]});
+// let g = new Game({name: "THEGAME", decks: {"deck1": d1, "deck2": d2}});
+// d1.save(function(err, d) {
+//   if (err) console.log("d1 didnt save help");
+// });
+// d2.save(function(err, d) {
+//   if (err) console.log("d2 didnt save help");
+// });
+// g.save(function(err, d) {
+//   if (err) console.log("g didnt save help");
+// });
+
+// Deck.findById('5c8dc7c0b6aa482b6f8ac885', function(err, bd) {
+//   if (!err && bd) {
+//     Deck.findById('5c8dc89d47e8042ba5673c20', function(err, wd) {
+//       if (!err && wd) {
+//         let g = new Game({name: "CAH", decks: {whiteDeck: wd, blackDeck: bd}});
+//         g.save(function(err, docs) {
+//           if (err) console.log("g save error");
+//         });
+//       } else console.log("wd error");
+//     });
+//   } else console.log("bd error");
+// });
+
+
+
+
+
+
 // contains arrays of the usernames of people in a lobby, indexed by lobby id
 let games = {};
 
@@ -212,7 +302,7 @@ app.get('/api/create-room/', (req, res) => {
 
         });
 
-        socket.once('start game', () => {
+        socket.once('start game', async (settings) => {
           console.log(`start game: ${roomId}`)
           // TODO: actually start game
           // lobby.emit('start game', {});
@@ -223,6 +313,10 @@ app.get('/api/create-room/', (req, res) => {
 
           // Host decided settings are set here for the game
 
+          // Settings will have game in it
+          let gameId = "5c8dcad255c6482c14aa7326"; // settings.gameId
+          let game = await Game.findById(gameId);
+
           currentGame.public = {
             blackCard: "",
             cardCsar: currentGame.players[0].username,
@@ -231,6 +325,8 @@ app.get('/api/create-room/', (req, res) => {
             whiteCards: [],
             winner: '',
           }
+
+
           // server only
           currentGame.private = {
             whiteCards: [], // {username, content}
@@ -238,9 +334,14 @@ app.get('/api/create-room/', (req, res) => {
           }
           // TODO implement the deck
           // TODO, pull deck from database and do thing
-          let deck = Array.from(Array(200).keys()); // cause we havent made decks yet
-          let whiteDeck = Array.from(Array(200).keys());
-          let blackDeck = Array.from(Array(200).keys());
+          // let deck = Array.from(Array(200).keys()); // cause we havent made decks yet
+          // let whiteDeck = Array.from(Array(200).keys());
+          // let blackDeck = Array.from(Array(200).keys());
+          let whiteDeck = game.decks.get('whiteDeck').cards;
+          let blackDeck = game.decks.get('blackDeck').cards;
+
+
+
           //TODO shuffle decks`
 
           let initialCards = 7;
