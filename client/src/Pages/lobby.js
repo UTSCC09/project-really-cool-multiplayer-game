@@ -50,7 +50,9 @@ class Lobby extends React.Component {
       });
     });
     // TODO: replace with username
-    this.lobby.emit('join', Math.random().toString(36).slice(2));
+    let username = Math.random().toString(36).slice(2);
+    this.state.username = username;
+    this.lobby.emit('join', username);
   }
 
   startGame() {
@@ -58,7 +60,7 @@ class Lobby extends React.Component {
   }
 
   selectWhiteCard(card) {
-    console.log(`${this.state.private.username} selects ${card}`);
+    console.log(`${this.state.gameState.private.username} selects ${card}`);
     this.lobby.emit('white card submit', card);
   }
 
@@ -87,7 +89,7 @@ class Lobby extends React.Component {
         {this.state.roomOwner &&
           <button onClick={this.startGame}>Start Game</button>
         }
-        <div>Spooky game div:
+        <div>Spooky game div: phase is {this.state.phase}
           {cards}
         </div>
       </div>

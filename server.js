@@ -38,7 +38,7 @@ var User = mongoose.model('User', userScheme);
 var Instruction = mongoose.model('Instruction', instructionScheme);
 var Deck = mongoose.model('Deck', deckScheme);
 
-mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/db", { useNewUrlParser: true });
+mongoose.connect(process.env.MONGODB_URI || "mongodb://test:test123@ds213896.mlab.com:13896/heroku_nz567lg6", { useNewUrlParser: true });
 let db = mongoose.connection;
 
 db.once("open", () => console.log("connected to the database"));
@@ -250,7 +250,7 @@ app.get('/api/create-room/', (req, res) => {
 
           function updateClientState(eventName) {
             for (player of currentGame.players) {
-              lobby.to(`${player.socketId}`).emit(eventName, {public: currentGame.public, private: player});
+              lobby.to(player.socketId).emit(eventName, {public: currentGame.public, private: player});
             }
           }
 
@@ -270,7 +270,8 @@ app.get('/api/create-room/', (req, res) => {
             updateClientState('black card');
             for (player of currentGame.players) {
               if (player.username !== currentGame.public.cardCsar) {
-                io.to(player.socketId).once('white card submit',(submittedCard) => {
+                lobby.connected[player.socketId].once('white card submit',(submittedCard) => {
+                  console.log(`${player.username} selected ${submittedCard}`)
                   //put the white card inthe rpiuavete array
                   currentGame.private.whiteCards.push(submittedCard);
                   if (currentGame.private.whiteCards.length === currentGame.players.length - 1) {
@@ -278,7 +279,7 @@ app.get('/api/create-room/', (req, res) => {
                     currentGame.public.whiteCards = currentGame.private.whiteCards;
                     // lobby.emit('reveal white card', {currentGame.public});
                     updateClientState('reveal white cards');
-                    io.to(currentGame.private.cardCsar.socketId).once('card selected', (winningCard) => {
+                    lobby.connected[currentGame.private.cardCsar.socketId].once('card selected', (winningCard) => {
                       // award points, start next round
                       // get winner name
                       let winner = winningCard.username;
