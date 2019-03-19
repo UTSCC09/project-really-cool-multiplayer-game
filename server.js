@@ -39,10 +39,6 @@ const gameScheme = new mongoose.Schema({
   decks: {type: Map, of: deckScheme}
 });
 
-const gameScheme = new mongoose.Schema({
-  decks: {},
-});
-
 var User = mongoose.model('User', userScheme);
 var Instruction = mongoose.model('Instruction', instructionScheme);
 var Deck = mongoose.model('Deck', deckScheme);
