@@ -1,6 +1,7 @@
 import React from 'react';
 import Game from './game';
 import io from 'socket.io-client';
+require("dotenv").config();
 
 class Lobby extends React.Component {
   constructor(props) {
