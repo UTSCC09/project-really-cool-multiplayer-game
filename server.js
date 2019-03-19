@@ -371,7 +371,7 @@ app.get('/api/create-room/', (req, res) => {
           for (player of currentGame.players) {
             player.cards = [];
             for (let i = 0; i < initialCards; i++) {
-              player.cards.push(whiteDeck.shift());
+              player.cards.push({content: whiteDeck.shift(), owner: player.username});
             }
             console.log(`${player.username} gets cards: ${player.cards}`)
             console.log(`sending to ${player.socketId}`)
@@ -384,7 +384,13 @@ app.get('/api/create-room/', (req, res) => {
               if (player.username !== currentGame.public.cardCsar) {
                 lobby.connected[player.socketId].once('white card submit',(submittedCard) => {
                   console.log(`${player.username} selected ${submittedCard}`)
-                  //put the white card inthe rpiuavete array
+                  // TODO: cards should have ids instead of filtering on content
+                  currentGame.players.find((player) => {
+                    return submittedCard.owner === player.username;
+                  }).cards.filter((card) => {
+                    card.content !== submittedCard.content;
+                  })
+                  //put the white card in the private array
                   currentGame.private.whiteCards.push(submittedCard);
                   if (currentGame.private.whiteCards.length === currentGame.players.length - 1) {
                     //get ccard csar to selecto
@@ -394,7 +400,7 @@ app.get('/api/create-room/', (req, res) => {
                     lobby.connected[currentGame.private.cardCsar.socketId].once('card selected', (winningCard) => {
                       // award points, start next round
                       // get winner name
-                      let winner = winningCard.username;
+                      let winner = winningCard.owner;
                       let idx = currentGame.public.players.findIndex((player) => {
                         return player.username === winner;
                       });
@@ -415,7 +421,7 @@ app.get('/api/create-room/', (req, res) => {
                       // deal cards
                       for (player of currentGame.players) {
                         if (player.username !== currentGame.public.cardCsar) {
-                          player.cards.push(whiteDeck.shift()); //TODO implement
+                          player.cards.push({content: whiteDeck.shift(), owner: player.username}); //TODO implement
                         }
                       }
 

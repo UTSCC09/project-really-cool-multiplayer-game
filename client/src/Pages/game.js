@@ -1,7 +1,5 @@
 import React from 'react';
 import PaperScope from 'paper';
-import blackDeck from './blackDeck';
-import whiteDeck from './whiteDeck';
 
 // Table Constants
 const TABLE_PADDING_X = 200;
@@ -22,6 +20,9 @@ const PLAYERHUD_WIDTH = 150;
 const PLAYERHUD_HEIGHT = 100;
 const PLAYERHUD_FILL_COLOR = '#f2f2f2';
 const PLAYERHUD_STROKE_COLOR = 'black';
+// temporary variables
+var curChosenCard = null;
+var lobby;
 // test event
 let waitingState = {
   phase: "waiting",
@@ -114,24 +115,31 @@ let gameoverState = {
 let lobbyState = {phase: "lobby"};
 
 
-function drawCard(x, y, cardContent, cardColor, textColor) {
+function drawCard(x, y, card, cardColor, textColor, selectable) {
   return () => {
     let paper = window.paper;
     var cardCorner = new paper.Point(x, y);
       
-    var card = new paper.Path.Rectangle(cardCorner, CARD_WIDTH, CARD_HEIGHT);
-    card.fillColor = cardColor || CARD_DEFAULT_COLOR;
+    var cardRect = new paper.Path.Rectangle(cardCorner, CARD_WIDTH, CARD_HEIGHT);
+    cardRect.fillColor = cardColor || CARD_DEFAULT_COLOR;
     // TODO: set these at global vars
-    card.strokeColor = 'black';
-    card.shadowColor = 'black';
-    card.shadowBlur = '12';
-    card.shadowOffset = new paper.Point(5,5);
+    cardRect.strokeColor = 'black';
+    cardRect.shadowColor = 'black';
+    cardRect.shadowBlur = '12';
+    cardRect.shadowOffset = new paper.Point(5,5);
+    
+    if (selectable) {
+      cardRect.onMouseDown = () => {
+        console.log(lobby, selectable, card);
+        lobby.emit(selectable, card);
+      };
+    }
   
     var pointTextLocation = new paper.Point(5,20);
   
     var myText = new paper.PointText(cardCorner.add(pointTextLocation));
     myText.fillColor = textColor || CARD_DEFAULT_TEXT_COLOR;
-    myText.wordwrap(cardContent, CARD_MAX_CONTENT_SIZE);
+    myText.wordwrap(card.content, CARD_MAX_CONTENT_SIZE);
   };
 }
 
@@ -149,7 +157,7 @@ function drawTable(){
   }
 }
 
-function drawCardRow(x, y, width, cards, cardColor, textColor) {
+function drawCardRow(x, y, width, cards, cardColor, textColor, selectable) {
   return() => {
     let cellWidth = width / cards.length;
     let cardPaddingX = (cellWidth/2) - (CARD_WIDTH/2)
@@ -157,7 +165,7 @@ function drawCardRow(x, y, width, cards, cardColor, textColor) {
     for (i = 0; i < cards.length; i++) {
       let curCard = cards[i];
       let curX = x + (i*cellWidth) + cardPaddingX
-      drawCard(curX, y, curCard, cardColor, textColor).call();
+      drawCard(curX, y, curCard, cardColor, textColor, selectable).call();
     }
   }
 }
@@ -228,14 +236,14 @@ function drawPlayerInfo(players, curPlayerName, curCardCsar) {
     let player1 = null;
     for (i=0; i < players.length; i++) {
       let player = players[i];
-      if (player.username == curPlayerName) {
+      if (player.username === curPlayerName) {
         player1 = player;
       } else {
         y+=1
-        drawPlayerHUD(playerPoints[y].x, playerPoints[y].y, player.username, player.score, player.username == curCardCsar).call();
+        drawPlayerHUD(playerPoints[y].x, playerPoints[y].y, player.username, player.score, player.username === curCardCsar).call();
       }
     }
-    drawPlayerHUD(playerPoints[0].x, playerPoints[0].y, player1.username, player1.score, player1.username == curCardCsar).call();
+    drawPlayerHUD(playerPoints[0].x, playerPoints[0].y, player1.username, player1.score, player1.username === curCardCsar).call();
   }
 }
 
@@ -245,7 +253,7 @@ function renderScreen(gameState) {
     paper.project.clear();
     let maxWidth = paper.view.size.width;
     let maxHeight = paper.view.size.height;
-    if (gameState.phase == 'picking' || gameState.phase == 'waiting' || gameState.phase == 'judging') {
+    if (gameState.phase === 'picking' || gameState.phase === 'waiting' || gameState.phase === 'judging') {
       // draw table
       drawTable().call();
       // draw playerHUD
@@ -253,17 +261,17 @@ function renderScreen(gameState) {
       // draw cards in hand
       let myHandWidth = maxWidth - (2*HAND_PADDING_X);
       let myHandHeight = maxHeight - CARD_HEIGHT;
-      drawCardRow(HAND_PADDING_X,myHandHeight,myHandWidth,gameState.private.cards).call();
+      drawCardRow(HAND_PADDING_X,myHandHeight,myHandWidth,gameState.private.cards, null, null, gameState.phase==='picking'?'white card submit':null).call();
       // draw black card
       // TODO reposition black card to a permanent spot
       let blackCard_x = TABLE_PADDING_X + 30;
       let blackCard_y = TABLE_PADDING_Y + 30;
-      drawCard(blackCard_x, blackCard_y, gameState.public.blackCard, 'black', 'white').call();
-      if (gameState.phase == 'judging') {
-        drawCardRow(0, maxHeight/2 - CARD_HEIGHT/2, maxWidth, gameState.public.whiteCards).call();
+      drawCard(blackCard_x, blackCard_y, {content: gameState.public.blackCard}, 'black', 'white').call();
+      if (gameState.phase === 'judging') {
+        drawCardRow(0, maxHeight/2 - CARD_HEIGHT/2, maxWidth, gameState.public.whiteCards, null, null, 'card selected').call();
       }
-    } else if (gameState.phase == "game over") {
-      let isWinner = gameState.public.winner == gameState.private.username;
+    } else if (gameState.phase === "game over") {
+      let isWinner = gameState.public.winner === gameState.private.username;
       // draw table
       drawTable().call();
       // draw win screen
@@ -277,7 +285,7 @@ class Game extends React.Component {
   constructor(props) {
     super(props);
     this.state = {username: this.props.username};
-    this.lobby = this.props.lobby;
+    lobby = this.props.lobby;
     // this.pc = new PaperCards(PaperScope, window);
     let paper = PaperScope;
     paper.install(window);
@@ -290,15 +298,15 @@ class Game extends React.Component {
         var space=-1;
         function cut(){
             for(var i=0;i<txt.length;i++){
-                (txt[i]==' ')&&(space=i);
+                (txt[i]===' ')&&(space=i);
                 if(i>=max){
-                    (space==-1||txt[i]==' ')&&(space=i);
-                    if(space>0){lines.push(txt.slice((txt[0]==' '?1:0),space));}
-                    txt=txt.slice(txt[0]==' '?(space+1):space);
+                    (space===-1||txt[i]===' ')&&(space=i);
+                    if(space>0){lines.push(txt.slice((txt[0]===' '?1:0),space));}
+                    txt=txt.slice(txt[0]===' '?(space+1):space);
                     space=-1;
                     break;
                     }}check();}
-        function check(){if(txt.length<=max){lines.push(txt[0]==' '?txt.slice(1):txt);txt='';}else if(txt.length){cut();}return;}
+        function check(){if(txt.length<=max){lines.push(txt[0]===' '?txt.slice(1):txt);txt='';}else if(txt.length){cut();}return;}
         check();
         return this.content=lines.join('\n');
       }
@@ -311,19 +319,19 @@ class Game extends React.Component {
       table.fillColor = TABLE_FILL_COLOR;
       table.strokeColor = TABLE_STROKE_COLOR;
       table.sendToBack();
-      this.lobby.on('black card', (gameState) => {
+      lobby.on('black card', (gameState) => {
         console.log("Got the black card");
         console.log(gameState);
         gameState.phase = gameState.public.cardCsar === this.state.username ? 'waiting' : 'picking';
         renderScreen(gameState).call();
       });
-      this.lobby.on('reveal white cards', (gameState) => {
+      lobby.on('reveal white cards', (gameState) => {
         console.log("reveal the white cards");
         console.log(gameState);
         gameState.phase = gameState.public.cardCsar === this.state.username ? 'judging' : 'waiting';
         renderScreen(gameState).call();
       });
-      this.lobby.on('game over', (gameState) => {
+      lobby.on('game over', (gameState) => {
         console.log("Game has ended");
         console.log(gameState);
         gameState.phase = 'game over';
