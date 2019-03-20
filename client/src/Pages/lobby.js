@@ -36,25 +36,8 @@ class Lobby extends React.Component {
       this.setState({otherPlayers: otherPlayers});
     });
     this.lobby.on('start game', (gameState) => {
-<<<<<<< HEAD
-      // this.setState({gameStarted: true});
       this.setState({lobbyState: "game started"});
       console.log(`start game, initial cards: ${gameState.private.cards}`)
-      // this.setState({gameState: gameState});
-      // this.lobby.on('black card', (gameState) => {
-      //   let phase = gameState.public.cardCsar === this.state.username ? 'waiting' : 'picking'
-      //   this.setState({gameState: gameState, phase: phase});
-      // });
-      // this.lobby.on('reveal white cards', (gameState) => {
-      //   let phase = gameState.public.cardCsar === this.state.username ? 'judging' : 'waiting'
-      //   this.setState({gameState:  gameState, phase: phase});
-      // });
-      // this.lobby.on('game over', (gameState) => {
-      //   this.setState({gameState: gameState, phase: 'game over'});
-      // });
-=======
-      this.setState({gameStarted: true});
->>>>>>> 4908dffa1071692c041d9b930892b5bd7b103ee3
     });
     // TODO: Give a default username on connect if none
     let username = window.localStorage.getItem('nickname');
@@ -68,7 +51,6 @@ class Lobby extends React.Component {
     this.lobby.emit('start game');
   }
 
-<<<<<<< HEAD
   joinGame() {
     let nickname = document.getElementById('nickname').value;
     nickname = nickname || Math.random().toString(36).slice(2);; //TODO real random name
@@ -76,18 +58,6 @@ class Lobby extends React.Component {
     this.setState({lobbyState: "lobby", username: nickname});
     this.lobby.emit('join', nickname);
   }
-
-  // selectWhiteCard(card) {
-  //   console.log(`${this.state.gameState.private.username} selects ${card}`);
-  //   this.lobby.emit('white card submit', card);
-  // }
-
-  // selectWinner(card) {
-  //   this.lobby.emit('card selected', card);
-  // }
-
-=======
->>>>>>> 4908dffa1071692c041d9b930892b5bd7b103ee3
   render() {
     let players = this.state.otherPlayers.map((username) => {
       return (
