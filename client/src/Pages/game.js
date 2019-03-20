@@ -115,7 +115,7 @@ let gameoverState = {
 let lobbyState = {phase: "lobby"};
 
 
-function drawCard(x, y, card, cardColor, textColor, selectable) {
+function drawCard(x, y, card, cardColor, textColor, emit, isSelectable) {
   return () => {
     let paper = window.paper;
     var cardCorner = new paper.Point(x, y);
@@ -128,10 +128,19 @@ function drawCard(x, y, card, cardColor, textColor, selectable) {
     cardRect.shadowBlur = '12';
     cardRect.shadowOffset = new paper.Point(5,5);
     
-    if (selectable) {
+    if (isSelectable) {
+      cardRect.onMouseEnter = () => {
+        cardRect.shadowColor = 'blue';
+      };
+      cardRect.onMouseLeave = () => {
+        cardRect.shadowColor = 'black';
+      }
+    }
+
+    if (emit) {
       cardRect.onMouseDown = () => {
-        console.log(lobby, selectable, card);
-        lobby.emit(selectable, card);
+        console.log(lobby, emit, card);
+        lobby.emit(emit, card);
       };
     }
   
@@ -157,7 +166,7 @@ function drawTable(){
   }
 }
 
-function drawCardRow(x, y, width, cards, cardColor, textColor, selectable) {
+function drawCardRow(x, y, width, cards, cardColor, textColor, emit, isSelectable) {
   return() => {
     let cellWidth = width / cards.length;
     let cardPaddingX = (cellWidth/2) - (CARD_WIDTH/2)
@@ -165,7 +174,7 @@ function drawCardRow(x, y, width, cards, cardColor, textColor, selectable) {
     for (i = 0; i < cards.length; i++) {
       let curCard = cards[i];
       let curX = x + (i*cellWidth) + cardPaddingX
-      drawCard(curX, y, curCard, cardColor, textColor, selectable).call();
+      drawCard(curX, y, curCard, cardColor, textColor, emit, isSelectable).call();
     }
   }
 }
@@ -253,7 +262,10 @@ function renderScreen(gameState) {
     paper.project.clear();
     let maxWidth = paper.view.size.width;
     let maxHeight = paper.view.size.height;
-    if (gameState.phase === 'picking' || gameState.phase === 'waiting' || gameState.phase === 'judging') {
+    let isPicking = gameState.phase==='picking';
+    let isWaiting = gameState.phase === 'waiting';
+    let isJudging = gameState.phase === 'judging';
+    if (isPicking || isWaiting || isJudging) {
       // draw table
       drawTable().call();
       // draw playerHUD
@@ -261,14 +273,14 @@ function renderScreen(gameState) {
       // draw cards in hand
       let myHandWidth = maxWidth - (2*HAND_PADDING_X);
       let myHandHeight = maxHeight - CARD_HEIGHT;
-      drawCardRow(HAND_PADDING_X,myHandHeight,myHandWidth,gameState.private.cards, null, null, gameState.phase==='picking'?'white card submit':null).call();
+      drawCardRow(HAND_PADDING_X,myHandHeight,myHandWidth,gameState.private.cards, null, null, isPicking?'white card submit':'', isPicking?true:false).call();
       // draw black card
       // TODO reposition black card to a permanent spot
       let blackCard_x = TABLE_PADDING_X + 30;
       let blackCard_y = TABLE_PADDING_Y + 30;
       drawCard(blackCard_x, blackCard_y, {content: gameState.public.blackCard}, 'black', 'white').call();
       if (gameState.phase === 'judging') {
-        drawCardRow(0, maxHeight/2 - CARD_HEIGHT/2, maxWidth, gameState.public.whiteCards, null, null, 'card selected').call();
+        drawCardRow(0, maxHeight/2 - CARD_HEIGHT/2, maxWidth, gameState.public.whiteCards, null, null, 'card selected', true).call();
       }
     } else if (gameState.phase === "game over") {
       let isWinner = gameState.public.winner === gameState.private.username;
