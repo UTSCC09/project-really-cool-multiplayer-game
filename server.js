@@ -282,6 +282,49 @@ app.get('/api/create-room/', (req, res) => {
     console.log(`new room ${roomId}`)
     let currentGame = { public: {}, players: [] };
 
+    function eugenics() {
+      //get ccard csar to selecto
+      currentGame.public.whiteCards = currentGame.private.whiteCards;
+      // lobby.emit('reveal white card', {currentGame.public});
+      updateClientState('reveal white cards');
+      lobby.connected[currentGame.private.cardCsar.socketId].once('card selected', (winningCard) => {
+        // award points, start next round
+        // get winner name
+        let winner = winningCard.owner;
+        let idx = currentGame.public.players.findIndex((player) => {
+          return player.username === winner;
+        });
+        currentGame.public.players[idx].score++;
+        if (currentGame.public.players[idx].score === currentGame.public.settings.winningScore) {
+          currentGame.public.winner = currentGame.public.players[idx].username;
+          updateClientState('game over');
+          // lobby.emit('game over', {currentGame.public.players[idx]});
+          return; //TODO play againstuff here
+        }
+
+        //restart the round new round round
+        // wipe everything
+        //eradicate whites
+        // check game over
+        currentGame.private.whiteCards = [];
+        currentGame.public.whiteCards = [];
+        // deal cards
+        for (player of currentGame.players) {
+          if (player.username !== currentGame.public.cardCsar) {
+            player.cards.push({ content: whiteDeck.shift(), owner: player.username }); //TODO implement
+          }
+        }
+
+        let cardCsarIdx = currentGame.players.findIndex((player) => {
+          return currentGame.private.cardCsar.username == player.username;
+        });
+        currentGame.private.cardCsar = currentGame.players[(cardCsarIdx + 1) % currentGame.players.length];
+        currentGame.public.cardCsar = currentGame.private.cardCsar.username;
+        currentGame.public.blackCard = blackDeck.shift(); //TODO MAKE AN ACTUALLY DECK
+        gameRound();
+      });
+    }
+
     let lobby = io.of(roomId);
     lobby.on('connection', (socket) => {
       console.log("person connected")
@@ -393,47 +436,11 @@ app.get('/api/create-room/', (req, res) => {
                   });
                   //put the white card in the private array
                   currentGame.private.whiteCards.push(submittedCard);
+                  // display empty white card to everyone
+                  currentGame.public.whiteCards.push({content: '', owner: submittedCard.owner});
+                  updateClientState('game state update');
                   if (currentGame.private.whiteCards.length === currentGame.players.length - 1) {
-                    //get ccard csar to selecto
-                    currentGame.public.whiteCards = currentGame.private.whiteCards;
-                    // lobby.emit('reveal white card', {currentGame.public});
-                    updateClientState('reveal white cards');
-                    lobby.connected[currentGame.private.cardCsar.socketId].once('card selected', (winningCard) => {
-                      // award points, start next round
-                      // get winner name
-                      let winner = winningCard.owner;
-                      let idx = currentGame.public.players.findIndex((player) => {
-                        return player.username === winner;
-                      });
-                      currentGame.public.players[idx].score++;
-                      if (currentGame.public.players[idx].score === currentGame.public.settings.winningScore) {
-                        currentGame.public.winner = currentGame.public.players[idx].username;
-                        updateClientState('game over');
-                        // lobby.emit('game over', {currentGame.public.players[idx]});
-                        return; //TODO play againstuff here
-                      }
-
-                      //restart the round new round round
-                      // wipe everything
-                      //eradicate whites
-                      // check game over
-                      currentGame.private.whiteCards = [];
-                      currentGame.public.whiteCards = [];
-                      // deal cards
-                      for (player of currentGame.players) {
-                        if (player.username !== currentGame.public.cardCsar) {
-                          player.cards.push({content: whiteDeck.shift(), owner: player.username}); //TODO implement
-                        }
-                      }
-
-                      let cardCsarIdx = currentGame.players.findIndex((player) => {
-                        return currentGame.private.cardCsar.username == player.username;
-                      });
-                      currentGame.private.cardCsar = currentGame.players[(cardCsarIdx + 1) % currentGame.players.length];
-                      currentGame.public.cardCsar = currentGame.private.cardCsar.username;
-                      currentGame.public.blackCard = blackDeck.shift(); //TODO MAKE AN ACTUALLY DECK
-                      gameRound();
-                    });
+                    eugenics();
                   }
                 });
               }
@@ -443,22 +450,30 @@ app.get('/api/create-room/', (req, res) => {
         });
 
         socket.on('disconnect', () => {
-            if (currentGame.players) {
-                currentGame.players = currentGame.players.filter((player) => {
-                  return player.username !== socket.username;
-                });
-                if (currentGame.players.length == 0) {
-                    // lobby is empty so remove it
-                    delete currentGame.players;
-                    // removes the namespace https://stackoverflow.com/questions/26400595/socket-io-how-do-i-remove-a-namespace
-                    const connectedSockets = Object.keys(lobby.connected); // Get Object with Connected SocketIds as properties
-                    connectedSockets.forEach(socketId => {
-                        lobby.connected[socketId].disconnect(); // Disconnect Each socket
-                    });
-                    lobby.removeAllListeners();
-                    delete io.nsps[lobby];
-                }
-            }
+          currentGame.players = currentGame.players.filter((player) => {
+            return player.socketId !== socket.id;
+          });
+          // nobody left, destroy the namespace
+          if (currentGame.players.length == 0) {
+            // lobby is empty so remove it
+            delete currentGame.players;
+            // removes the namespace https://stackoverflow.com/questions/26400595/socket-io-how-do-i-remove-a-namespace
+            const connectedSockets = Object.keys(lobby.connected); // Get Object with Connected SocketIds as properties
+            connectedSockets.forEach(socketId => {
+                lobby.connected[socketId].disconnect(); // Disconnect Each socket
+            });
+            lobby.removeAllListeners();
+            delete io.nsps[lobby];
+          }
+          // card csar left
+          if (socket.username === currentGame.public.cardCsar) {
+            // if judging phase, new game haha
+            // otherwise refund cards new game haha
+          } else {
+            // non-card csar left
+            // remove card from white cards if there
+            // check if time to judge
+          }
         });
     });
     res.send(roomId);

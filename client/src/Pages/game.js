@@ -279,9 +279,8 @@ function renderScreen(gameState) {
       let blackCard_x = TABLE_PADDING_X + 30;
       let blackCard_y = TABLE_PADDING_Y + 30;
       drawCard(blackCard_x, blackCard_y, {content: gameState.public.blackCard}, 'black', 'white').call();
-      if (gameState.phase === 'judging') {
-        drawCardRow(0, maxHeight/2 - CARD_HEIGHT/2, maxWidth, gameState.public.whiteCards, null, null, 'card selected', true).call();
-      }
+      // draw public white cards
+      drawCardRow(0, maxHeight/2 - CARD_HEIGHT/2, maxWidth, gameState.public.whiteCards, null, null, isJudging?'card selected':'waiting', isJudging?true:false).call();
     } else if (gameState.phase === "game over") {
       let isWinner = gameState.public.winner === gameState.private.username;
       // draw table
@@ -341,6 +340,14 @@ class Game extends React.Component {
         console.log("reveal the white cards");
         console.log(gameState);
         gameState.phase = gameState.public.cardCsar === this.state.username ? 'judging' : 'waiting';
+        renderScreen(gameState).call();
+      });
+      lobby.on('game state update', (gameState) => {
+        if (gameState.public.cardCsar === this.state.username || gameState.public.whiteCards.find((card) => {return card.owner === this.state.username})) {
+          gameState.phase = 'waiting';
+        } else {
+          gameState.phase = 'picking';
+        }
         renderScreen(gameState).call();
       });
       lobby.on('game over', (gameState) => {
