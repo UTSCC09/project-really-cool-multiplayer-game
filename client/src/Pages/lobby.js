@@ -7,8 +7,6 @@ class Lobby extends React.Component {
     super(props);
     this.state = {otherPlayers: [], roomOwner: false, phase: 'lobby'};
     this.startGame = this.startGame.bind(this);
-    // this.selectWhiteCard = this.selectWhiteCard.bind(this);
-    // this.selectWinner = this.selectWinner.bind(this);
     let params = new URLSearchParams(window.location.search);
     let roomId = params.get('id');
 
@@ -36,19 +34,6 @@ class Lobby extends React.Component {
     });
     this.lobby.on('start game', (gameState) => {
       this.setState({gameStarted: true});
-      console.log(`start game, initial cards: ${gameState.private.cards}`)
-      // this.setState({gameState: gameState});
-      // this.lobby.on('black card', (gameState) => {
-      //   let phase = gameState.public.cardCsar === this.state.username ? 'waiting' : 'picking'
-      //   this.setState({gameState: gameState, phase: phase});
-      // });
-      // this.lobby.on('reveal white cards', (gameState) => {
-      //   let phase = gameState.public.cardCsar === this.state.username ? 'judging' : 'waiting'
-      //   this.setState({gameState:  gameState, phase: phase});
-      // });
-      // this.lobby.on('game over', (gameState) => {
-      //   this.setState({gameState: gameState, phase: 'game over'});
-      // });
     });
     // TODO: replace with username
     let username = Math.random().toString(36).slice(2);
@@ -60,30 +45,12 @@ class Lobby extends React.Component {
     this.lobby.emit('start game');
   }
 
-  // selectWhiteCard(card) {
-  //   console.log(`${this.state.gameState.private.username} selects ${card}`);
-  //   this.lobby.emit('white card submit', card);
-  // }
-
-  // selectWinner(card) {
-  //   this.lobby.emit('card selected', card);
-  // }
-
   render() {
-    // TODO: change this display to be actually good
     let players = this.state.otherPlayers.map((username) => {
       return (
         <li>{username}</li>
       )
     });
-    // let cards = [];
-    // if (this.state.gameState.private.cards) {
-    //   cards = this.state.gameState.private.cards.map((card) => {
-    //     return (
-    //       <Card onCardClick={this.selectWhiteCard} card={card}/>
-    //       )
-    //     });
-    // }
     let game;
     let lobby;
     if (this.state.gameStarted) {
@@ -107,19 +74,5 @@ class Lobby extends React.Component {
     )
   }
 }
-
-// class Card extends React.Component {
-//   handleClick = () => {
-//     this.props.onCardClick(this.props.card);
-//   }
-
-//   render() {
-//     return (
-//       <li onClick={this.handleClick}>
-//         card: {this.props.card}
-//       </li>
-//     );
-//   }
-// }
 
 export default Lobby;
