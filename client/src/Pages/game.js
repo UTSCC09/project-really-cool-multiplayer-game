@@ -130,25 +130,30 @@ function drawCard(x, y, card, cardColor, textColor, emit, isSelectable) {
     
     if (isSelectable) {
       cardRect.onMouseEnter = () => {
-        cardRect.shadowColor = 'blue';
+        if (curChosenCard === null) {
+          cardRect.shadowColor = 'blue';
+        }
       };
       cardRect.onMouseLeave = () => {
-        cardRect.shadowColor = 'black';
+        if (curChosenCard === null) {
+          cardRect.shadowColor = 'black';
+        }
       }
     }
-
-    if (emit) {
-      cardRect.onMouseDown = () => {
-        console.log(lobby, emit, card);
-        lobby.emit(emit, card);
-      };
-    }
-  
-    var pointTextLocation = new paper.Point(5,20);
-  
-    var myText = new paper.PointText(cardCorner.add(pointTextLocation));
+    var pointTextLocation = cardCorner.add(new paper.Point(5,20));
+    
+    var myText = new paper.PointText(pointTextLocation);
     myText.fillColor = textColor || CARD_DEFAULT_TEXT_COLOR;
     myText.wordwrap(card.content, CARD_MAX_CONTENT_SIZE);
+    
+        if (emit) {
+          cardRect.onMouseUp = () => {
+            curChosenCard = {card: cardRect, text: myText};
+            console.log(lobby, emit, card);
+            lobby.emit(emit, card);
+          };
+        }
+      
   };
 }
 
@@ -259,7 +264,11 @@ function drawPlayerInfo(players, curPlayerName, curCardCsar) {
 function renderScreen(gameState) {
   return () => {
     let paper = window.paper;
+    // clear the canvas
     paper.project.clear();
+    // reset curChosenCard
+    curChosenCard = null;
+
     let maxWidth = paper.view.size.width;
     let maxHeight = paper.view.size.height;
     let isPicking = gameState.phase==='picking';
@@ -276,8 +285,10 @@ function renderScreen(gameState) {
       drawCardRow(HAND_PADDING_X,myHandHeight,myHandWidth,gameState.private.cards, null, null, isPicking?'white card submit':'', isPicking?true:false).call();
       // draw black card
       // TODO reposition black card to a permanent spot
-      let blackCard_x = TABLE_PADDING_X + 30;
-      let blackCard_y = TABLE_PADDING_Y + 30;
+      let tableWidth = maxWidth - 2*TABLE_PADDING_X;
+      let tableHeight = maxHeight - TABLE_PADDING_Y - TABLE_PLAYER_SPACE;
+      let blackCard_x = TABLE_PADDING_X + tableWidth/3;
+      let blackCard_y = TABLE_PADDING_Y + tableHeight/2 - CARD_HEIGHT/2;
       drawCard(blackCard_x, blackCard_y, {content: gameState.public.blackCard}, 'black', 'white').call();
       // draw public white cards
       drawCardRow(0, maxHeight/2 - CARD_HEIGHT/2, maxWidth, gameState.public.whiteCards, null, null, isJudging?'card selected':'waiting', isJudging?true:false).call();
