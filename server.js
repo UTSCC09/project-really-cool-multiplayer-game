@@ -282,6 +282,12 @@ app.get('/api/create-room/', (req, res) => {
     console.log(`new room ${roomId}`)
     let currentGame = { public: {}, players: [] };
 
+    function updateClientState(eventName) {
+      for (player of currentGame.players) {
+        lobby.to(player.socketId).emit(eventName, {public: currentGame.public, private: player});
+      }
+    }
+
     function eugenics() {
       //get ccard csar to selecto
       currentGame.public.whiteCards = currentGame.private.whiteCards;
@@ -402,12 +408,12 @@ app.get('/api/create-room/', (req, res) => {
           currentGame.public.players = currentGame.players.map((player) => {
             return { username: player.username, score: 0 };
           });
-
-          function updateClientState(eventName) {
-            for (player of currentGame.players) {
-              lobby.to(player.socketId).emit(eventName, {public: currentGame.public, private: player});
-            }
-          }
+          //
+          // function updateClientState(eventName) {
+          //   for (player of currentGame.players) {
+          //     lobby.to(player.socketId).emit(eventName, {public: currentGame.public, private: player});
+          //   }
+          // }
 
           // Deal cards to each player
           // let csar = Math.floor(Math.random() * Math.floor(players.length));
