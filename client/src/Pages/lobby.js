@@ -9,13 +9,12 @@ class Lobby extends React.Component {
     this.state = {otherPlayers: [], roomOwner: false, phase: 'lobby'};
     this.state.lobbyState = window.localStorage.getItem('nickname') ? 'lobby' : 'no nickname';
     this.startGame = this.startGame.bind(this);
-    // this.selectWhiteCard = this.selectWhiteCard.bind(this);
-    // this.selectWinner = this.selectWinner.bind(this);
     let params = new URLSearchParams(window.location.search);
     let roomId = params.get('id');
 
     // TODO: read this from some config file so when we deploy on heroku we don't have to change it each time
-    this.lobby = io.connect(process.env.URL?process.env.URL+roomId:`http://localhost:5000/${roomId}`);
+    console.log("env:", process.env, "URL:", process.env.URL)
+    this.lobby = io.connect(process.env.REACT_APP_URL+roomId);
     this.lobby.on('room full', () => {
       // TODO: room is full
     });
@@ -37,6 +36,7 @@ class Lobby extends React.Component {
       this.setState({otherPlayers: otherPlayers});
     });
     this.lobby.on('start game', (gameState) => {
+<<<<<<< HEAD
       // this.setState({gameStarted: true});
       this.setState({lobbyState: "game started"});
       console.log(`start game, initial cards: ${gameState.private.cards}`)
@@ -52,6 +52,9 @@ class Lobby extends React.Component {
       // this.lobby.on('game over', (gameState) => {
       //   this.setState({gameState: gameState, phase: 'game over'});
       // });
+=======
+      this.setState({gameStarted: true});
+>>>>>>> 4908dffa1071692c041d9b930892b5bd7b103ee3
     });
     // TODO: Give a default username on connect if none
     let username = window.localStorage.getItem('nickname');
@@ -65,6 +68,7 @@ class Lobby extends React.Component {
     this.lobby.emit('start game');
   }
 
+<<<<<<< HEAD
   joinGame() {
     let nickname = document.getElementById('nickname').value;
     nickname = nickname || Math.random().toString(36).slice(2);; //TODO real random name
@@ -82,21 +86,14 @@ class Lobby extends React.Component {
   //   this.lobby.emit('card selected', card);
   // }
 
+=======
+>>>>>>> 4908dffa1071692c041d9b930892b5bd7b103ee3
   render() {
-    // TODO: change this display to be actually good
     let players = this.state.otherPlayers.map((username) => {
       return (
         <li>{username}</li>
       )
     });
-    // let cards = [];
-    // if (this.state.gameState.private.cards) {
-    //   cards = this.state.gameState.private.cards.map((card) => {
-    //     return (
-    //       <Card onCardClick={this.selectWhiteCard} card={card}/>
-    //       )
-    //     });
-    // }
     let game;
     let lobby;
     // if (this.state.gameStarted) {
@@ -151,19 +148,5 @@ class Lobby extends React.Component {
     )
   }
 }
-
-// class Card extends React.Component {
-//   handleClick = () => {
-//     this.props.onCardClick(this.props.card);
-//   }
-
-//   render() {
-//     return (
-//       <li onClick={this.handleClick}>
-//         card: {this.props.card}
-//       </li>
-//     );
-//   }
-// }
 
 export default Lobby;
