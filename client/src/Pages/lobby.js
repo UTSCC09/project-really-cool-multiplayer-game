@@ -50,8 +50,8 @@ class Lobby extends React.Component {
       //   this.setState({gameState: gameState, phase: 'game over'});
       // });
     });
-    // TODO: replace with username
-    let username = Math.random().toString(36).slice(2);
+    // TODO: Give a default username on connect if none
+    let username = window.localStorage.getItem('nickname') || Math.random().toString(36).slice(2);
     this.state.username = username;
     this.lobby.emit('join', username);
   }
