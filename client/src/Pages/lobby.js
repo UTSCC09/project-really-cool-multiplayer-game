@@ -5,7 +5,9 @@ import io from 'socket.io-client';
 class Lobby extends React.Component {
   constructor(props) {
     super(props);
+    this.joinGame = this.joinGame.bind(this);
     this.state = {otherPlayers: [], roomOwner: false, phase: 'lobby'};
+    this.state.lobbyState = window.localStorage.getItem('nickname') ? 'lobby' : 'no nickname';
     this.startGame = this.startGame.bind(this);
     // this.selectWhiteCard = this.selectWhiteCard.bind(this);
     // this.selectWinner = this.selectWinner.bind(this);
@@ -35,7 +37,8 @@ class Lobby extends React.Component {
       this.setState({otherPlayers: otherPlayers});
     });
     this.lobby.on('start game', (gameState) => {
-      this.setState({gameStarted: true});
+      // this.setState({gameStarted: true});
+      this.setState({lobbyState: "game started"});
       console.log(`start game, initial cards: ${gameState.private.cards}`)
       // this.setState({gameState: gameState});
       // this.lobby.on('black card', (gameState) => {
@@ -51,13 +54,23 @@ class Lobby extends React.Component {
       // });
     });
     // TODO: Give a default username on connect if none
-    let username = window.localStorage.getItem('nickname') || Math.random().toString(36).slice(2);
-    this.state.username = username;
-    this.lobby.emit('join', username);
+    let username = window.localStorage.getItem('nickname');
+    if (username) {
+      this.state.username = username;
+      this.lobby.emit('join', username);
+    }
   }
 
   startGame() {
     this.lobby.emit('start game');
+  }
+
+  joinGame() {
+    let nickname = document.getElementById('nickname').value;
+    nickname = nickname || Math.random().toString(36).slice(2);; //TODO real random name
+    window.localStorage.setItem('nickname', nickname);
+    this.setState({lobbyState: "lobby", username: nickname});
+    this.lobby.emit('join', nickname);
   }
 
   // selectWhiteCard(card) {
@@ -86,18 +99,49 @@ class Lobby extends React.Component {
     // }
     let game;
     let lobby;
-    if (this.state.gameStarted) {
-      game = (<Game lobby={this.lobby} username={this.state.username}></Game>)
-    } else {
-      lobby = (
-        <div>
-          <ul>PLAYERS: {players}</ul>
-          {this.state.roomOwner &&
-            <button onClick={this.startGame}>Start Game</button>
-          }
-        </div>
-      )
+    // if (this.state.gameStarted) {
+    //   game = (<Game lobby={this.lobby} username={this.state.username}></Game>)
+    // } else {
+    //   lobby = (
+    //     <div>
+    //       <ul>PLAYERS: {players}</ul>
+    //       {this.state.roomOwner &&
+    //         <button onClick={this.startGame}>Start Game</button>
+    //       }
+    //     </div>
+    //   )
+    // }
+    switch (this.state.lobbyState) {
+      case "no nickname": lobby = (
+        <div id="main-container" className="d-flex flex-column justify-content-center align-items-center p-2">
+          <h1> Shuffle With Friends </h1>
+          <span>
+            Nickname:
+            <input id="nickname" className="ml-2"></input>
+          </span>
+          If you don't choose one we'll make one for you
+          <span>
+            <button type="button" className="btn btn-primary m-3" onClick={this.joinGame}>Join Game</button>
+          </span>
+        </div>);
+        break;
+
+      case "lobby": lobby = (
+          <div>
+            <ul>PLAYERS: {players}</ul>
+            {this.state.roomOwner &&
+              <button onClick={this.startGame}>Start Game</button>
+            }
+          </div>
+        );
+        break;
+      case "game started":
+        game = (<Game lobby={this.lobby} username={this.state.username}></Game>);
+        break;
+      default: break;
     }
+
+
     return(
       <div className="w-100 h-100">
         {lobby}
