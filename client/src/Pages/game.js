@@ -370,10 +370,10 @@ class Game extends React.Component {
   render() {
     return(
       <div className="game">
-        <button onClick={renderScreen(waitingState)}>waiting</button>
+        {/* <button onClick={renderScreen(waitingState)}>waiting</button>
         <button onClick={renderScreen(pickingState)}>picking</button>
         <button onClick={renderScreen(judgingState)}>judging</button>
-        <button onClick={renderScreen(gameoverState)}>game over</button>
+        <button onClick={renderScreen(gameoverState)}>game over</button> */}
         {/* <button onClick={renderScreen(lobbyState)}>lobby</button> */}
       </div>
     )
