@@ -64,6 +64,7 @@ class Lobby extends React.Component {
         <li>{username}</li>
       )
     });
+    let host = this.state.roomOwner ? "You" : this.state.otherPlayers[0];
     let game;
     let lobby;
     // if (this.state.gameStarted) {
@@ -95,9 +96,15 @@ class Lobby extends React.Component {
 
       case "lobby": lobby = (
           <div>
-            <ul>PLAYERS: {players}</ul>
-            {this.state.roomOwner &&
-              <button onClick={this.startGame}>Start Game</button>
+            <h1> Shuffle With Friends </h1>
+            <h2> Players: </h2>
+            <ul> {players} </ul>
+            <br/>
+            <h3> Host: {host} </h3>
+            <br/>
+            {
+              this.state.roomOwner &&
+              <button type="button" className="btn btn-primary" onClick={this.startGame}>Start Game</button>
             }
           </div>
         );
