@@ -216,7 +216,7 @@ function drawWinOverlay(isWinner) {
   };
 }
 
-function drawPlayerInfo(players, curPlayerName, curCardCsar) {
+function drawPlayerInfo(players, curPlayerId, curCardCsar) {
   return() => {
     let paper = window.paper;
     let maxWidth = paper.view.size.width;
@@ -250,14 +250,14 @@ function drawPlayerInfo(players, curPlayerName, curCardCsar) {
     let player1 = null;
     for (i=0; i < players.length; i++) {
       let player = players[i];
-      if (player.username === curPlayerName) {
+      if (player.socketId === curPlayerId) {
         player1 = player;
       } else {
         y+=1
-        drawPlayerHUD(playerPoints[y].x, playerPoints[y].y, player.username, player.score, player.username === curCardCsar).call();
+        drawPlayerHUD(playerPoints[y].x, playerPoints[y].y, player.username, player.score, player.socketId === curCardCsar).call();
       }
     }
-    drawPlayerHUD(playerPoints[0].x, playerPoints[0].y, player1.username, player1.score, player1.username === curCardCsar).call();
+    drawPlayerHUD(playerPoints[0].x, playerPoints[0].y, player1.username, player1.score, player1.socketId === curCardCsar).call();
   }
 }
 
@@ -278,7 +278,7 @@ function renderScreen(gameState) {
       // draw table
       drawTable().call();
       // draw playerHUD
-      drawPlayerInfo(gameState.public.players, gameState.private.username, gameState.public.cardCsar).call();
+      drawPlayerInfo(gameState.public.players, gameState.private.socketId, gameState.public.cardCsar).call();
       // draw cards in hand
       let myHandWidth = maxWidth - (2*HAND_PADDING_X);
       let myHandHeight = maxHeight - CARD_HEIGHT;
@@ -293,7 +293,7 @@ function renderScreen(gameState) {
       // draw public white cards
       drawCardRow(0, maxHeight/2 - CARD_HEIGHT/2, maxWidth, gameState.public.whiteCards, null, null, isJudging?'card selected':'waiting', isJudging?true:false).call();
     } else if (gameState.phase === "game over") {
-      let isWinner = gameState.public.winner === gameState.private.username;
+      let isWinner = gameState.public.winner === gameState.private.socketId;
       // draw table
       drawTable().call();
       // draw win screen
@@ -306,7 +306,7 @@ function renderScreen(gameState) {
 class Game extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {username: this.props.username};
+    this.state = {socketId: this.props.socketId};
     lobby = this.props.lobby;
     // this.pc = new PaperCards(PaperScope, window);
     let paper = PaperScope;
@@ -344,21 +344,19 @@ class Game extends React.Component {
       lobby.on('black card', (gameState) => {
         console.log("Got the black card");
         console.log(gameState);
-        gameState.phase = gameState.public.cardCsar === this.state.username ? 'waiting' : 'picking';
+        this.phase = gameState.public.cardCsar === this.state.socketId ? 'waiting' : 'picking';
+        gameState.phase = this.phase;
         renderScreen(gameState).call();
       });
       lobby.on('reveal white cards', (gameState) => {
         console.log("reveal the white cards");
         console.log(gameState);
-        gameState.phase = gameState.public.cardCsar === this.state.username ? 'judging' : 'waiting';
+        this.phase = gameState.public.cardCsar === this.state.socketId ? 'judging' : 'waiting';
+        gameState.phase = this.phase;
         renderScreen(gameState).call();
       });
       lobby.on('game state update', (gameState) => {
-        if (gameState.public.cardCsar === this.state.username || gameState.public.whiteCards.find((card) => {return card.owner === this.state.username})) {
-          gameState.phase = 'waiting';
-        } else {
-          gameState.phase = 'picking';
-        }
+        gameState.phase = this.phase;
         renderScreen(gameState).call();
       });
       lobby.on('game over', (gameState) => {
