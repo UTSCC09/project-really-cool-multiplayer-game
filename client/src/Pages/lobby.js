@@ -21,7 +21,7 @@ class Lobby extends React.Component {
     this.lobby.on('player list', (players) => {
       console.log("list of players")
       console.log(players)
-      this.setState({players, roomOwner: players[0] === this.state.username ? true : false});
+      this.setState({players: players.map((player) => {return player.username}), roomOwner: players[0].socketId === this.socketId ? true : false});
     });
     this.lobby.on('start game', (gameState) => {
       this.setState({lobbyState: "game started"});
@@ -31,7 +31,9 @@ class Lobby extends React.Component {
     let username = window.localStorage.getItem('nickname');
     if (username) {
       this.state.username = username;
-      this.lobby.emit('join', username);
+      this.lobby.emit('join', username, (socketId) => {
+        this.socketId = socketId;
+      });
     }
   }
 
@@ -44,7 +46,9 @@ class Lobby extends React.Component {
     nickname = nickname || Math.random().toString(36).slice(2);; //TODO real random name
     window.localStorage.setItem('nickname', nickname);
     this.setState({lobbyState: "lobby", username: nickname});
-    this.lobby.emit('join', nickname);
+    this.lobby.emit('join', nickname, (socketId) => {
+      this.socketId = socketId;
+    });
   }
   render() {
     let players = this.state.players.map((username) => {
@@ -91,7 +95,7 @@ class Lobby extends React.Component {
         );
         break;
       case "game started":
-        game = (<Game lobby={this.lobby} username={this.state.username}></Game>);
+        game = (<Game lobby={this.lobby} socketId={this.socketId}></Game>);
         break;
       default: break;
     }

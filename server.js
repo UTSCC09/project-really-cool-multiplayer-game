@@ -283,7 +283,7 @@ app.get('/api/create-room/', (req, res) => {
     let currentGame = { public: {}, players: [] };
 
     function updateClientState(eventName) {
-      for (player of currentGame.players) {
+      for (let player of currentGame.players) {
         lobby.to(player.socketId).emit(eventName, {public: currentGame.public, private: player});
       }
     }
@@ -298,18 +298,22 @@ app.get('/api/create-room/', (req, res) => {
         socket.disconnect()
       }
 
-      socket.on('join', (username) => {
+      socket.on('join', (username, callback) => {
         console.log(`${username} joined ${roomId}`)
         // TODO:  change function if they're joining mid-game
-        socket.username = username;
         console.log(`${username}: ${socket.id}`)
-        currentGame.players.push({ username: username, socketId: socket.id });
-        lobby.emit('player list', currentGame.players.map((player) => {return player.username}));
+        currentGame.players.push({username, socketId: socket.id});
+        if (callback) {
+          callback(socket.id);
+        }
+        lobby.emit('player list', currentGame.players);
       });
 
       socket.once('start game', startGame);
       async function startGame(settings) {
-        socket.removeListener('disconnect', disconnectDuringLobby);
+        for (let socketId in lobby.connected) {
+          lobby.connected[socketId].removeAllListeners('disconnect');
+        }
         console.log(`start game: ${roomId}`);
 
         // Decide what game to play/ what deck to use here
@@ -324,7 +328,7 @@ app.get('/api/create-room/', (req, res) => {
 
         currentGame.public = {
           blackCard: "",
-          cardCsar: currentGame.players[currentGame.players.length - 1].username,
+          cardCsar: '',
           settings: {winningScore: 5},
           players: [],  // {username, score}
           whiteCards: [],
@@ -334,8 +338,8 @@ app.get('/api/create-room/', (req, res) => {
 
         // server only
         currentGame.private = {
-          whiteCards: [], // {username, content}
-          cardCsar: currentGame.players[currentGame.players.length - 1]
+          whiteCards: [], // {owner: socketId of the owner, content: string of its contents}
+          cardCsarIdx: currentGame.players.length - 1
         }
         // TODO implement the deck
         // TODO, pull deck from database and do thing
@@ -361,7 +365,7 @@ app.get('/api/create-room/', (req, res) => {
 
         let initialCards = 7;
         currentGame.public.players = currentGame.players.map((player) => {
-          return { username: player.username, score: 0 };
+          return { username: player.username, socketId: player.socketId, score: 0 };
         });
         //
         // function updateClientState(eventName) {
@@ -372,20 +376,20 @@ app.get('/api/create-room/', (req, res) => {
 
         // Deal cards to each player
         // let csar = Math.floor(Math.random() * Math.floor(players.length));
-        for (player of currentGame.players) {
+        for (let player of currentGame.players) {
           player.cards = [];
           for (let i = 0; i < initialCards; i++) {
-            player.cards.push({content: whiteDeck.shift(), owner: player.username});
+            player.cards.push({content: whiteDeck.shift(), owner: player.socketId});
           }
-          console.log(`${player.username} gets cards: ${player.cards}`)
-          console.log(`sending to ${player.socketId}`)
           lobby.to(player.socketId).emit('start game', {public: currentGame.public, private: player});
         }
         selectingPhase();
         
         function selectingPhase() {
-          socket.removeListener('disconnect', disconnectDuringJudging);
-          socket.on('disconnect', disconnectDuringSelecting);
+          for (let socketId in lobby.connected) {
+            lobby.connected[socketId].removeAllListeners('disconnect');
+            lobby.connected[socketId].on('disconnect', disconnectDuringSelecting(socketId));
+          }
           
           //restart the round new round round
           // wipe everything
@@ -393,27 +397,24 @@ app.get('/api/create-room/', (req, res) => {
           currentGame.private.whiteCards = [];
           currentGame.public.whiteCards = [];
           // deal cards
-          for (player of currentGame.players) {
+          for (let player of currentGame.players) {
             if (player.cards.length !== 7) {
-              player.cards.push({ content: whiteDeck.shift(), owner: player.username });
+              player.cards.push({ content: whiteDeck.shift(), owner: player.socketId});
             }
           }
   
-          let cardCsarIdx = currentGame.players.findIndex((player) => {
-            return currentGame.private.cardCsar.username == player.username;
-          });
-          currentGame.private.cardCsar = currentGame.players[(cardCsarIdx + 1) % currentGame.players.length];
-          currentGame.public.cardCsar = currentGame.private.cardCsar.username;
+          currentGame.private.cardCsarIdx = (currentGame.private.cardCsarIdx + 1) % currentGame.players.length;
+          currentGame.public.cardCsar = currentGame.players[currentGame.private.cardCsarIdx].socketId
 
           currentGame.public.blackCard = blackDeck.shift();
           updateClientState('black card');
-          for (player of currentGame.players) {
-            if (player.username !== currentGame.public.cardCsar) {
+          for (let player of currentGame.players) {
+            if (player.socketId !== currentGame.public.cardCsar) {
               lobby.connected[player.socketId].once('white card submit',(submittedCard) => {
                 console.log(`${submittedCard.owner} selected ${submittedCard.content}`)
                 // TODO: cards should have ids instead of filtering on content
                 let currPlayer = currentGame.players.find((player) => {
-                  return submittedCard.owner === player.username;
+                  return submittedCard.owner === player.socketId;
                 });
                 currPlayer.cards = currPlayer.cards.filter((card) => {
                   return card.content !== submittedCard.content;
@@ -432,23 +433,25 @@ app.get('/api/create-room/', (req, res) => {
         }
 
         function judgingPhase() {
-          socket.removeListener('disconnect', disconnectDuringSelecting);
-          socket.on('disconnect', disconnectDuringJudging);
+          for (let socketId in lobby.connected) {
+            lobby.connected[socketId].removeAllListeners('disconnect');
+            lobby.connected[socketId].on('disconnect', disconnectDuringJudging(socketId));
+          }
 
           //get ccard csar to selecto
           currentGame.public.whiteCards = currentGame.private.whiteCards;
           updateClientState('reveal white cards');
-          lobby.connected[currentGame.private.cardCsar.socketId].once('card selected', (winningCard) => {
+          lobby.connected[currentGame.public.cardCsar].once('card selected', (winningCard) => {
             // award points, start next round
             // get winner name
             let winner = winningCard.owner;
             let idx = currentGame.public.players.findIndex((player) => {
-              return player.username === winner;
+              return player.socketId === winner;
             });
             currentGame.public.players[idx].score++;
             // check if the game is over
             if (currentGame.public.players[idx].score === currentGame.public.settings.winningScore) {
-              currentGame.public.winner = currentGame.public.players[idx].username;
+              currentGame.public.winner = currentGame.public.players[idx].socketId;
               updateClientState('game over');
               return; //TODO play againstuff here
             }
@@ -456,42 +459,64 @@ app.get('/api/create-room/', (req, res) => {
           });
         }
 
-        function disconnectDuringJudging() {
-          // the person who left was the last person
-          if (playerLeft() === -1) {return}
-          if (socket.username === currentGame.public.cardCsar) {
-            selectingPhase();
-          } else {
-            currentGame.public.whiteCards = currentGame.public.whiteCards.filter((card) => {                
-              return card.owner = socket.username;
+        function disconnectDuringJudging(socketId) {
+          return () => {
+            console.log(`${socketId} disconnected during judging`)
+            // the person who left was the last person
+            if (playerLeft(socketId) === -1) {return}
+            currentGame.public.players = currentGame.public.players.filter((player) => {
+              return player.socketId !== socketId;
             });
-            updateClientState('game state update');
+            if (socketId === currentGame.public.cardCsar) {
+              console.log('card csar left during judging new round')
+              // reduce by one to account new person taking their index spot
+              currentGame.private.cardCsarIdx -= 1;
+              selectingPhase();
+            } else {
+              console.log('non card csar left remove their option')
+              currentGame.public.whiteCards = currentGame.public.whiteCards.filter((card) => {                
+                return card.owner === socketId;
+              });
+              updateClientState('game state update');
+            }
           }
         }
       
-        function disconnectDuringSelecting() {
-          // the person who left was the last person
-          if (playerLeft() === -1) {return}
-          if (socket.username === currentGame.public.cardCsar) {
-            // remove listeners for selecting card
-            for (socket in lobby.connected) {
-              socket.removeAllListeners('white card selected');
-            }
-            // start new round
-            selectingPhase();
-          } else {
-            let cardIdx = currentGame.private.whiteCards.findIndex((card) => {
-              return card.owner === socket.username;
+        function disconnectDuringSelecting(socketId) {
+          return () => {
+            console.log(`${socketId} disconnected during selecting`)
+            // the person who left was the last person
+            if (playerLeft(socketId) === -1) {return}
+            currentGame.public.players = currentGame.public.players.filter((player) => {
+              return player.socketId !== socketId;
             });
-            // user had already selected a card
-            if (cardIdx !== -1) {
-              // remove that card from the options
-              currentGame.private.whiteCards.splice(cardIdx, 1);
-              currentGame.public.whiteCards.splice(cardIdx, 1);
-              updateClientState('game state update');
-            } else if (currentGame.private.whiteCards.length === currentGame.players.length - 1) {
-              // if everyone left has submitted 
-              judgingPhase();
+            if (socketId === currentGame.public.cardCsar) {
+              console.log('card csar left during selection new round')
+              // remove listeners for selecting card
+              for (let socketId in lobby.connected) {
+                lobby.connected[socketId].removeAllListeners('white card submit');
+              }
+              // reduce by one to account new person taking their index spot
+              currentGame.private.cardCsarIdx -= 1;
+              // start new round
+              selectingPhase();
+            } else {
+              let cardIdx = currentGame.private.whiteCards.findIndex((card) => {
+                return card.owner === socketId;
+              });
+              // user had already selected a card
+              if (cardIdx !== -1) {
+                console.log('someone who selected a card left')
+                // remove that card from the options
+                currentGame.private.whiteCards.splice(cardIdx, 1);
+                currentGame.public.whiteCards.splice(cardIdx, 1);
+              }
+              if (currentGame.private.whiteCards.length === currentGame.players.length - 1) {
+                // if everyone left has submitted 
+                judgingPhase();
+              } else {
+                updateClientState('game state update');
+              }
             }
           }
         }
@@ -500,29 +525,31 @@ app.get('/api/create-room/', (req, res) => {
       socket.on('disconnect', disconnectDuringLobby);
 
       function disconnectDuringLobby() {
-        let idx = playerLeft();
+        console.log(socket.id + 'left during lobby')
+        let idx = playerLeft(socket.id);
         if (idx === -1) {
           return
         } else if (idx === 0) {
           // person was room host
           lobby.connected[currentGame.players[0].socketId].on('start game', startGame);
         }
-        lobby.emit('player list', currentGame.players.map((player) => {return player.username}));
+        lobby.emit('player list', currentGame.players);
       }
 
-      function playerLeft() {
+      function playerLeft(socketId) {
         let idx = currentGame.players.findIndex((player) => {
-          return player.socketId !== socket.id;
+          return player.socketId === socketId;
         });
         currentGame.players.splice(idx, 1);
         // nobody left, destroy the namespace
-        if (currentGame.players.length == 0) {
+        if (currentGame.players.length === 0) {
           // lobby is empty so remove it
           delete currentGame;
           // removes the namespace https://stackoverflow.com/questions/26400595/socket-io-how-do-i-remove-a-namespace
           const connectedSockets = Object.keys(lobby.connected); // Get Object with Connected SocketIds as properties
           connectedSockets.forEach(socketId => {
-              lobby.connected[socketId].disconnect(); // Disconnect Each socket
+            lobby.connected[socketId].removeAllListeners('disconnect');
+            lobby.connected[socketId].disconnect(); // Disconnect Each socket
           });
           lobby.removeAllListeners();
           delete io.nsps[lobby];
