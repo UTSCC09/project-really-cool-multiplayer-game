@@ -9,6 +9,8 @@ class Lobby extends React.Component {
     this.state = {players: [], roomOwner: false, phase: 'lobby'};
     this.state.lobbyState = window.localStorage.getItem('nickname') ? 'lobby' : 'no nickname';
     this.startGame = this.startGame.bind(this);
+    this.kickPlayer = this.kickPlayer.bind(this);
+    this.copyLink = this.copyLink.bind(this);
     let params = new URLSearchParams(window.location.search);
     let roomId = params.get('id');
 
@@ -41,6 +43,14 @@ class Lobby extends React.Component {
     this.lobby.emit('start game');
   }
 
+  kickPlayer(username) {
+    // Disconnect player with given username
+  }
+
+  copyLink() {
+    // copy link to clipboard
+  }
+
   joinGame() {
     let nickname = document.getElementById('nickname').value;
     nickname = nickname || Math.random().toString(36).slice(2);; //TODO real random name
@@ -53,23 +63,17 @@ class Lobby extends React.Component {
   render() {
     let players = this.state.players.map((username) => {
       return (
-        <li>{username}</li>
+          <div className="w-75">
+            <li className="list-group-item ml-3">
+            {this.state.roomOwner && <button type="button" className="btn btn-danger mr-3" onClick={this.kickPlayer(username)}> X </button>}
+            {username}
+            </li>
+          </div>
       )
     });
+    let host = this.state.roomOwner ? "You" : this.state.otherPlayers[0];
     let game;
     let lobby;
-    // if (this.state.gameStarted) {
-    //   game = (<Game lobby={this.lobby} username={this.state.username}></Game>)
-    // } else {
-    //   lobby = (
-    //     <div>
-    //       <ul>PLAYERS: {players}</ul>
-    //       {this.state.roomOwner &&
-    //         <button onClick={this.startGame}>Start Game</button>
-    //       }
-    //     </div>
-    //   )
-    // }
     switch (this.state.lobbyState) {
       case "no nickname": lobby = (
         <div id="main-container" className="d-flex flex-column justify-content-center align-items-center p-2">
@@ -84,12 +88,21 @@ class Lobby extends React.Component {
           </span>
         </div>);
         break;
-
+        // Copy link
+        // Kick (for host)
+        // Settings
       case "lobby": lobby = (
           <div>
-            <ul>PLAYERS: {players}</ul>
-            {this.state.roomOwner &&
-              <button onClick={this.startGame}>Start Game</button>
+            <h1> Shuffle With Friends </h1>
+            <h2> Players: </h2>
+            <div className="w-25"> <ul className="list-group"> {players} </ul> </div>
+            <br/>
+            <h3> Host: {host} </h3>
+            <br/>
+            <button type="button" className="btn btn-primary mr-3" onClick={this.copyLink}>Copy Link</button>
+            {
+              this.state.roomOwner &&
+              <button type="button" className="btn btn-success" onClick={this.startGame}>Start Game</button>
             }
           </div>
         );
