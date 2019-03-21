@@ -6,7 +6,7 @@ class Lobby extends React.Component {
   constructor(props) {
     super(props);
     this.joinGame = this.joinGame.bind(this);
-    this.state = {otherPlayers: [], roomOwner: false, phase: 'lobby'};
+    this.state = {players: [], roomOwner: false, phase: 'lobby'};
     this.state.lobbyState = window.localStorage.getItem('nickname') ? 'lobby' : 'no nickname';
     this.startGame = this.startGame.bind(this);
     let params = new URLSearchParams(window.location.search);
@@ -21,19 +21,7 @@ class Lobby extends React.Component {
     this.lobby.on('player list', (players) => {
       console.log("list of players")
       console.log(players)
-      if (players.length === 0) {
-        // first to join
-        this.setState({roomOwner: true});
-      } else {
-        this.setState({otherPlayers: players});
-      }
-    });
-    this.lobby.on('player joined', (username) => {
-      console.log("player joined your channel")
-      console.log(username)
-      let otherPlayers = this.state.otherPlayers;
-      otherPlayers.push(username);
-      this.setState({otherPlayers: otherPlayers});
+      this.setState({players, roomOwner: players[0] === this.state.username ? true : false});
     });
     this.lobby.on('start game', (gameState) => {
       this.setState({lobbyState: "game started"});
@@ -59,7 +47,7 @@ class Lobby extends React.Component {
     this.lobby.emit('join', nickname);
   }
   render() {
-    let players = this.state.otherPlayers.map((username) => {
+    let players = this.state.players.map((username) => {
       return (
         <li>{username}</li>
       )
