@@ -71,7 +71,7 @@ class Lobby extends React.Component {
           </div>
       )
     });
-    let host = this.state.roomOwner ? "You" : this.state.otherPlayers[0];
+    let host = this.state.roomOwner ? "You" : this.state.players[0];
     let game;
     let lobby;
     switch (this.state.lobbyState) {
