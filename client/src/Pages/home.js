@@ -4,6 +4,7 @@ class Home extends React.Component {
   constructor(props) {
     super(props);
     this.createGame = this.createGame.bind(this);
+    this.authenticate = this.authenticate.bind(this);
   }
 
   createGame() {
@@ -17,12 +18,17 @@ class Home extends React.Component {
     });
   }
 
+  authenticate() {
+    console.log("wahoo");
+    window.location.href = '/auth/google/';
+  }
+
   render() {
     return(
         <div id="main-container" className="d-flex justify-content-between">
 
           <div className="d-flex flex-column justify-content-start align-items-start p-2">
-            <button type="button" className="btn btn-primary m-1"> Log in</button>
+            <button type="button" className="btn btn-primary m-1" onClick={this.authenticate}> Log in</button>
           </div>
 
           <div className="d-flex flex-column justify-content-center align-items-center p-2">
@@ -37,9 +43,11 @@ class Home extends React.Component {
               <button type="button" className="btn btn-primary m-3">Join a Game</button>
             </span>
           </div>
+
           <div className="d-flex flex-column justify-content-end align-items-start p-2 invisible">
             <button type="button" className="btn btn-primary m-1"> Log in</button>
           </div>
+
         </div>
     )
   }
