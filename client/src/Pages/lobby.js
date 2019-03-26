@@ -117,7 +117,7 @@ class Lobby extends React.Component {
     return(
       <div className="w-100 h-100">
         {lobby}
-        <canvas id="gameCanvas"></canvas>
+        <canvas id="gameCanvas" resize="true"></canvas>
         {game}
       </div>
     )
