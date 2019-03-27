@@ -22,7 +22,8 @@ const userScheme = new mongoose.Schema({
   email: String,
   token: String,
   givenName: String,
-  familyName: String
+  familyName: String,
+  friends: [mongoose.Schema.Types.ObjectId]
 });
 
 const instructionScheme = new mongoose.Schema({
@@ -143,7 +144,8 @@ app.get('/auth/google/callback/', passport.authenticate('google', {failureRedire
     email: req.user.profile.emails[0].value,
     googleId: req.user.profile.id,
     givenName: req.user.profile.name.givenName,
-    familyName: req.user.profile.name.familyName
+    familyName: req.user.profile.name.familyName,
+    friends: []
   }
   let option = {new: true, upsert: true, setDefaultOnInsert: true};
   User.findOneAndUpdate({googleId: req.user.profile.id}, update, option).exec(function(err, user) {
