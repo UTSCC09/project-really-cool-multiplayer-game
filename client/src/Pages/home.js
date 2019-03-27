@@ -5,6 +5,9 @@ class Home extends React.Component {
     super(props);
     this.createGame = this.createGame.bind(this);
     this.authenticate = this.authenticate.bind(this);
+    this.getUser = this.getUser.bind(this);
+    this.state = { user: null }
+    this.getUser();
   }
 
   createGame() {
@@ -19,11 +22,42 @@ class Home extends React.Component {
   }
 
   authenticate() {
-    console.log("wahoo");
+    console.log(document.cookie);
     window.location.href = '/auth/google/';
   }
 
+  getUser() {
+    // https://plainjs.com/javascript/utilities/set-cookie-get-cookie-and-delete-cookie-5/
+    let token = document.cookie.match('(^|;) ?' + 'token' + '=([^;]*)(;|$)');
+    token = token ? token[2] : null;
+    if (token) {
+      fetch('/api/user/token/' + token + '/')
+      .then(response => response.json())
+      .then(user => {console.log(user); this.setState({user: user})})
+      .catch(err => console.log("haha heck", err));
+    }
+  }
+
+
   render() {
+    // let token = document.cookie.match('(^|;) ?' + 'token' + '=([^;]*)(;|$)');
+    // token = token ? token[2] : null;
+    // if (token) {
+    //   let response = await fetch('/api/users/token/' + token).json();
+    //   console.log(response);
+    // }
+    //
+    let userPane = this.state.user ? (
+      <div className="d-flex flex-column justify-content-start align-items-start p-2">
+        <button type="button" className="btn btn-primary m-1" onClick={this.logOut}> Log out</button>
+      </div>
+    ) : (
+      <div className="d-flex flex-column justify-content-start align-items-start p-2">
+        <button type="button" className="btn btn-primary m-1" onClick={this.authenticate}> Log in</button>
+      </div>
+    );
+
+
     return(
         <div id="main-container" className="d-flex justify-content-between">
 
