@@ -35,7 +35,9 @@ class Home extends React.Component {
   }
 
   logOut() {
-
+    fetch('/logout/')
+    .then(this.setState({user: null}))
+    .catch(err => console.log("err logging out", err));
   }
 
   authenticate() {
