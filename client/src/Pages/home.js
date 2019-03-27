@@ -26,10 +26,10 @@ class Home extends React.Component {
   createGame() {
     let nickname = document.getElementById('nickname').value;
     nickname = nickname || Math.random().toString(36).slice(2);; //TODO real random name
-    window.localStorage.setItem('nickname', nickname);
     fetch('/api/create-room/').then((response) => {
       return  response.text();
     }).then((roomId) => {
+      window.sessionStorage.setItem('nickname-'+roomId, nickname);
       window.location.href = `/lobby?id=${roomId}`;
     });
   }
