@@ -48,6 +48,8 @@ var Game = mongoose.model('Game', gameScheme);
 mongoose.connect(process.env.MONGODB_URI || "mongodb://test:test123@ds213896.mlab.com:13896/heroku_nz567lg6", { useNewUrlParser: true });
 let db = mongoose.connection;
 
+console.log("DB running on: " + process.env.MONGODB_URI || "mongodb://test:test123@ds213896.mlab.com:13896/heroku_nz567lg6");
+
 db.once("open", () => console.log("connected to the database"));
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
@@ -65,7 +67,8 @@ googleAuth(passport);
 app.use(passport.initialize());
 app.use(cookieSession({
     name: 'session',
-    keys: ['123']
+    keys: ['123'],
+    maxAge: 7 * 24 * 60 * 60 * 1000 // cookies will last 1 week
 }));
 app.use(cookieParser());
 app.use(function(req, res, next) {
@@ -384,13 +387,13 @@ app.get('/api/create-room/', (req, res) => {
           lobby.to(player.socketId).emit('start game', {public: currentGame.public, private: player});
         }
         selectingPhase();
-        
+
         function selectingPhase() {
           for (let socketId in lobby.connected) {
             lobby.connected[socketId].removeAllListeners('disconnect');
             lobby.connected[socketId].on('disconnect', disconnectDuringSelecting(socketId));
           }
-          
+
           //restart the round new round round
           // wipe everything
           // eradicate whites
@@ -402,7 +405,7 @@ app.get('/api/create-room/', (req, res) => {
               player.cards.push({ content: whiteDeck.shift(), owner: player.socketId});
             }
           }
-  
+
           currentGame.private.cardCsarIdx = (currentGame.private.cardCsarIdx + 1) % currentGame.players.length;
           currentGame.public.cardCsar = currentGame.players[currentGame.private.cardCsarIdx].socketId
 
@@ -474,14 +477,14 @@ app.get('/api/create-room/', (req, res) => {
               selectingPhase();
             } else {
               console.log('non card csar left remove their option')
-              currentGame.public.whiteCards = currentGame.public.whiteCards.filter((card) => {                
+              currentGame.public.whiteCards = currentGame.public.whiteCards.filter((card) => {
                 return card.owner === socketId;
               });
               updateClientState('game state update');
             }
           }
         }
-      
+
         function disconnectDuringSelecting(socketId) {
           return () => {
             console.log(`${socketId} disconnected during selecting`)
@@ -512,7 +515,7 @@ app.get('/api/create-room/', (req, res) => {
                 currentGame.public.whiteCards.splice(cardIdx, 1);
               }
               if (currentGame.private.whiteCards.length === currentGame.players.length - 1) {
-                // if everyone left has submitted 
+                // if everyone left has submitted
                 judgingPhase();
               } else {
                 updateClientState('game state update');
