@@ -25,7 +25,7 @@ const userScheme = new mongoose.Schema({
   familyName: String,
   friends: [mongoose.Schema.Types.ObjectId],
   incomingRequests: [mongoose.Schema.Types.ObjectId],
-  pendingRequests: [moongoose.Schema.Types.ObjectId]
+  pendingRequests: [mongoose.Schema.Types.ObjectId]
 });
 
 const instructionScheme = new mongoose.Schema({
