@@ -123,11 +123,20 @@ app.post('/api/file/', upload.single('file'), function(req, res) {
 
 // READ
 app.get('/', function (req, res, next) {
-  if (req.session.token) {
-    res.cookie('token', req.session.token);
-  } else {
-    res.cookie('token', '');
-  }
+  // if (req.session.token) {
+  //   res.cookie('token', req.session.token);
+  // } else {
+  //   res.cookie('token', '');
+  // }
+  //
+  // if (req.session.id) {
+  //   res.cookie('id', req.session.id)
+  // } else {
+  //   res.cookie('id', '');
+  // }
+  res.cookie('token', req.session.token || '');
+  res.cookie('id', req.session.id || '');
+
   next();
 });
 
@@ -154,8 +163,9 @@ app.get('/auth/google/callback/', passport.authenticate('google', {failureRedire
   let option = {new: true, upsert: true, setDefaultOnInsert: true};
   User.findOneAndUpdate({googleId: req.user.profile.id}, update, option).exec(function(err, user) {
     if (err) return res.send(500, { error: err });
-  })
-  res.redirect('/');
+    req.session.id = user._id;
+    res.redirect('/');
+  });
 });
 
 app.get('/logout/', function (req, res) {
