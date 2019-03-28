@@ -17,9 +17,10 @@ class Home extends React.Component {
     token = token ? token[2] : null;
     if (token) {
       fetch('/api/user/token/' + token + '/')
+      .then(response => {if (!response.ok) throw Error(response); return response})
       .then(response => response.json())
       .then(user => {console.log(user); this.setState({user: user})})
-      .catch(err => console.log("err fetchign user", err));
+      .catch(err => console.log("err fetching user", err));
     }
   }
 
