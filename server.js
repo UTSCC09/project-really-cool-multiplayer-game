@@ -136,7 +136,6 @@ app.get('/', function (req, res, next) {
   // }
   res.cookie('token', req.session.token || '');
   res.cookie('id', req.session.id || '');
-
   next();
 });
 
@@ -179,8 +178,7 @@ app.get('/logout/', function (req, res) {
 });
 
 app.get('/api/deck/:id/', function(req, res) {
-  let id = Number(req.params.id);
-  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
+  let id = req.params.id;
   Deck.findById(id, function(err, deck) {
     if (err) return res.send(500, {error : err});
     else if (user === null) return res.send(404, {error: 'Deck not found'});
@@ -189,8 +187,7 @@ app.get('/api/deck/:id/', function(req, res) {
 });
 
 app.get('/api/user/:id/', function(req, res) {
-  let id = Number(req.params.id);
-  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
+  let id = req.params.id;
   User.findById(id, function(err, user) {
     if (err) return res.send(500, {error : err});
     else if (user === null) return res.send(404, {error: 'User not found'});
@@ -229,8 +226,7 @@ app.get('/api/games/list/', function(req, res) {
 });
 
 app.get('/api/games/:id/', function(req, res) {
-  let id = Number(req.params.id);
-  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
+  let id = req.params.id;
   Game.findById(id, function(err, game) {
     if (err) return res.send(500, {error: err});
     else if (game === null) return res.send(404, {error: 'Game not found'});
@@ -240,8 +236,7 @@ app.get('/api/games/:id/', function(req, res) {
 
 // UPDATE
 app.put('/api/deck/:id/', function(req, res) {
-  let id = Number(req.params.id);
-  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
+  let id = req.params.id;
   let content = req.body.content;
   let update = {content: content}
   Deck.findByIdAndUpdate(id, update, function(err, deck) {
@@ -253,8 +248,7 @@ app.put('/api/deck/:id/', function(req, res) {
 
 // DELETE
 app.delete('/api/deck/:id/', function(req, res) {
-  let id = Number(req.params.id);
-  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
+  let id = req.params.id;
   Deck.findByIdAndDelete(id, function(err, deck) {
     if (err) return res.send(500, { error: err });
     else if (deck === null) return res.send(404, {error: "Deck does not exist"});
@@ -263,8 +257,7 @@ app.delete('/api/deck/:id/', function(req, res) {
 });
 
 app.delete('/api/user/:id/', function(req, res) {
-  let id = Number(req.params.id);
-  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
+  let id = req.params.id;
   User.findByIdAndDelete(id, function(err, user) {
     if (err) return res.send(500, { error: err });
     else if (user === null) return res.send(404, {error: "User does not exist"});
