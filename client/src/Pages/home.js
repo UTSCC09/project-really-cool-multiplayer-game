@@ -15,12 +15,21 @@ class Home extends React.Component {
     // https://plainjs.com/javascript/utilities/set-cookie-get-cookie-and-delete-cookie-5/
     let token = document.cookie.match('(^|;) ?' + 'token' + '=([^;]*)(;|$)');
     token = token ? token[2] : null;
-    if (token) {
-      fetch('/api/user/token/' + token + '/')
-      .then(response => {if (!response.ok) throw Error(response); return response})
-      .then(response => response.json())
-      .then(user => {console.log(user); this.setState({user: user})})
-      .catch(err => console.log("err fetching user", err));
+    let id = document.cookie.match('(^|;) ?' + 'id' + '=([^;]*)(;|$)');
+    id = id ? id[2] : null
+
+    if (token && id) {
+      fetch('/api/user/' + id + '/', {
+        method: "GET",
+        headers: { "token": token }
+      }).then(response => {
+        if (!response.ok) throw Error(response);
+        return response
+      }).then(response => {
+        return response.json();
+      }).then(user => {
+        console.log("user from last call, ", user); this.setState({ user: user })
+      }).catch(err => console.log("err fetching user", err));
     }
   }
 
