@@ -184,7 +184,20 @@ app.get('/api/user/:id/', function(req, res) {
   User.findById(id, function(err, user) {
     if (err) return res.send(500, {error : err});
     else if (user === null) return res.send(404, {error: 'User not found'});
-    else return res.json(user);
+    else {
+      // Check for token in header
+      let token = req.get('token');
+      if (token === user.token) {
+        return res.json(user);
+      } else {
+        let publicUserInfo = {
+          givenName: user.givenName,
+          familyName: user.familyName,
+          friends: user.friends
+        }
+        return res.json(publicUserInfo);
+      }
+    }
   });
 });
 
