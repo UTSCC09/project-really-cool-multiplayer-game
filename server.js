@@ -77,7 +77,8 @@ app.use(function(req, res, next) {
 // CREATE
 app.post('/api/deck/', isAuthenticated, function(req, res) {
   let deckContent = req.body.content;
-  let newDeck = new Deck({content: deckContent, ownerId: req.session.userId});
+  let deckName = req.body.name;
+  let newDeck = new Deck({name: deckName, content: deckContent, ownerId: req.session.userId});
   newDeck.save(function(err, newDeck) {
     if (err) return res.send(500, {error: err});
   });
@@ -203,6 +204,14 @@ app.get('/api/games/:id/', function(req, res) {
     if (err) return res.send(500, {error: err});
     else if (game === null) return res.send(404, {error: 'Game not found'});
     else return res.json(game);
+  });
+});
+
+// get decks belonging to your current user
+app.get('/api/user/myDecks', isAuthenticated,  function(req, res) {
+  Deck.find({ownerId:req.session.userId}, function(err, cards) {
+    if (err) return res.send(500, {error: err});
+    else return res.json(cards);
   });
 });
 

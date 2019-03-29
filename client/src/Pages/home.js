@@ -36,7 +36,11 @@ class Home extends React.Component {
       <div class="col-8">
         <form>
           <div class="form-group">
-            <label class="mr-sm-2" for="deck-type-select">Deck Type</label>
+          <label for="deck-name-input">Deck Name</label>
+          <input type="text" class="form-control" id="deck-name-input">
+          </div>
+          <div class="form-group">
+            <label for="deck-type-select">Deck Type</label>
             <select class="custom-select mr-sm-2" id="deck-type-select">
               <option selected>Choose...</option>
               <option value="Black">Black Deck</option>
@@ -61,11 +65,11 @@ class Home extends React.Component {
 
     // temp payload
     var testPayload = [
-      {name:'test deck 1' ,whiteDeck:'lol, these, are, tests, for, white',blackDeck:'black, deck, test'},
-      {name:'test deck 2' ,whiteDeck:'lol, these, are, tests, for, white',blackDeck:'black, deck, test'},
-      {name:'test deck 3' ,whiteDeck:'lol, these, are, tests, for, white',blackDeck:'black, deck, test'},
-      {name:'test deck 4' ,whiteDeck:'lol, these, are, tests, for, white',blackDeck:'black, deck, test'},
-      {name:'test deck 5' ,whiteDeck:'lol, these, are, tests, for, white',blackDeck:'black, deck, test'}
+      {name:'test deck 2' ,whiteDeck:['lol', 'these', 'are', 'tests', 'for', 'white'], blackDeck:['black', 'deck', 'test']},
+      {name:'test deck 1' ,whiteDeck:['lol', 'these', 'are', 'tests', 'for', 'white'], blackDeck:['black', 'deck', 'test']},
+      {name:'test deck 3' ,whiteDeck:['lol', 'these', 'are', 'tests', 'for', 'white'], blackDeck:['black', 'deck', 'test']},
+      {name:'test deck 4' ,whiteDeck:['lol', 'these', 'are', 'tests', 'for', 'white'], blackDeck:['black', 'deck', 'test']},
+      {name:'test deck 5' ,whiteDeck:['lol', 'these', 'are', 'tests', 'for', 'white'], blackDeck:['black', 'deck', 'test']}
     ]
     // call api for list of user decks and populate playerDecks
     this.playerDecks = testPayload;
@@ -125,27 +129,6 @@ class Home extends React.Component {
             <button onClick={this.getDecks} type="button" className="btn btn-info m-3">My Decks</button>
           </span>
           <span className='container' id='deck-form-container'>
-              {/* <div className='row'>
-                <div className="col-4">
-                  <label for="deck-list-tab">My Decks</label>
-                  <div className="list-group" id="deck-list-tab" role="tablist">
-                    <a onClick={this.tabSwitch} className="list-group-item list-group-item-action active" id="list-add-new-deck">Add New Deck...</a>
-                  </div>
-                </div>
-                <div className="col-8">
-                  <form>
-                    <div className="form-group">
-                      <label for="blackCardTextArea">Black Cards</label>
-                      <textarea className="form-control" id="blackCardTextArea" rows="4"></textarea>
-                    </div>
-                    <div className="form-group">
-                      <label for="whiteCardTextArea">White Cards</label>
-                      <textarea className="form-control" id="whiteCardTextArea" rows="4"></textarea>
-                    </div>
-                    <div className="form-group d-flex justify-content-end" id="submit-buttons-container"></div>
-                  </form>
-                </div>
-              </div> */}
           </span>
       </div>
     )
