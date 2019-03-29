@@ -85,7 +85,8 @@ app.use(function(req, res, next) {
 app.post('/api/deck/', isAuthenticated, function(req, res) {
   let deckContent = req.body.content;
   let deckName = req.body.name;
-  let newDeck = new Deck({name: deckName, content: deckContent, ownerId: req.session.userId});
+  let deckType = req.body.type;
+  let newDeck = new Deck({name: deckName, type: deckType, content: deckContent, ownerId: req.session.userId});
   newDeck.save(function(err, newDeck) {
     if (err) return res.send(500, {error: err});
   });
@@ -361,7 +362,9 @@ app.put('/api/user/:id/friend/', function(req, res) {
 app.put('/api/deck/:id/', function(req, res) {
   let id = req.params.id;
   let content = req.body.content;
-  let update = {content: content}
+  let deckName = req.body.name;
+  let deckType = req.body.type;
+  let update = {name: deckName, type: deckType, content: content};
   Deck.findByIdAndUpdate(id, update, function(err, deck) {
     if (err) return res.send(500, { error: err });
     else if (deck === null) return res.send(404, {error: "Deck does not exist"});
