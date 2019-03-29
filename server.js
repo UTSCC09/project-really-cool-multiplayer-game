@@ -448,6 +448,7 @@ app.get('/api/create-room/', (req, res) => {
             let idx = currentGame.public.players.findIndex((player) => {
               return player.socketId === winner;
             });
+            console.log(idx);
             currentGame.public.players[idx].score++;
             // check if the game is over
             if (currentGame.public.players[idx].score === currentGame.public.settings.winningScore) {
@@ -475,7 +476,7 @@ app.get('/api/create-room/', (req, res) => {
             } else {
               console.log('non card csar left remove their option')
               currentGame.public.whiteCards = currentGame.public.whiteCards.filter((card) => {                
-                return card.owner === socketId;
+                return card.owner !== socketId;
               });
               updateClientState('game state update');
             }
