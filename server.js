@@ -21,6 +21,7 @@ const userScheme = new mongoose.Schema({
   googleId: String,
   email: String,
   token: String,
+  photo: String,
   givenName: String,
   familyName: String,
   friends: [mongoose.Schema.Types.ObjectId],
@@ -152,6 +153,7 @@ app.get('/auth/google/callback/', passport.authenticate('google', {failureRedire
   let update = {
     token: req.user.token,
     email: req.user.profile.emails[0].value,
+    photo: req.user.profile.photos[0].value,
     googleId: req.user.profile.id,
     givenName: req.user.profile.name.givenName,
     familyName: req.user.profile.name.familyName,
@@ -200,7 +202,8 @@ app.get('/api/user/:id/', function(req, res) {
         let publicUserInfo = {
           givenName: user.givenName,
           familyName: user.familyName,
-          friends: user.friends
+          friends: user.friends,
+          photo: user.photo,
         }
         return res.json(publicUserInfo);
       }
@@ -208,6 +211,23 @@ app.get('/api/user/:id/', function(req, res) {
   });
 });
 
+app.get('/api/user/:id/friend/', function(req, res) {
+  let id = req.params.id;
+  User.findById(id, 'friends', function(err, user) {
+    if (err) return res.send(500, {error: err});
+    else if (user == null) return res.send(404, {error: 'User not found'});
+    else if (user.friends === []) return res.json([]);
+    else {
+      User.find({ '_id': { $in: user.friends } }, "friends photo givenName familyName", function(err, users) {
+        if (err) return res.send(500, {error: err});
+        else if (users == null) return res.json([]);
+        else return res.json(users);
+      });
+    }
+  });
+});
+
+// DEPRECATED use GET /api/user/:id/ with token in header
 app.get('/api/user/token/:token/', function(req, res) {
   let token = req.params.token;
   User.findOne({token: token}, function(err, user) {
@@ -235,6 +255,68 @@ app.get('/api/games/:id/', function(req, res) {
 });
 
 // UPDATE
+app.put('/api/user/:id/friend/', function(req, res) {
+  console.log("heres the body", req.body);
+  let recipientId = req.params.id;
+  let senderId = req.body.id;
+  let requestType = req.body.requestType; // "SEND || ACCEPT || DECLINE";
+  let token = req.get('token');
+
+  if (requestType !== "SEND" && requestType !== "ACCEPT" && requestType !== "DECLINE") {
+    return res.send(400, {error: "Incorrect request type: '"+ requestType + "'. Must be either 'SEND', 'ACCEPT', or 'DECLINE'."});
+  } else if (!token) {
+    return res.send(401, {error: "User not authorized"});
+  } else if (senderId === recipientId) {
+    return res.send(400, {error: "Identical Ids"});
+  }
+
+  // sender -> guy doing a thing on the client (sending the request, accepting the request or declining the request)
+  // recipient -> the other one
+  User.findById(senderId, function(err, sender) {
+    if (err) return res.send(500, {error: err});
+    else if (sender === null) return res.send(404, {error: "Sending user:" + senderId + " not found"});
+    else {
+      if (!sender.token || sender.token !== token) return res.send(401, {error: "User not authorized"});
+      User.findById(recipientId, function(err, recipient) {
+        if (err) return res.send(500, {error: err});
+        else if (recipient === null) return res.send(404, {error: "Recipient user:" + recipientId + " not found"});
+        else {
+          let senderUpdate = {}
+          let recipientUpdate = {}
+          if (requestType === "SEND") {
+            senderUpdate = { $addToSet: { pendingRequests: recipientId } };
+            recipientUpdate = { $addToSet: { incomingRequests: senderId } };
+          } else {
+
+            // check if there was a friend request from recipient to sender already
+            // if not, send error
+            if (!sender.incomingRequests.includes(recipientId) || !recipient.pendingRequests,includes(senderId)) {
+              return res.send(500, {error: "User: " + recipientId + " has not sent a request to user: " + senderId});
+            }
+
+            senderUpdate = { $pull: { incomingRequests: recipientId } };
+            recipientUpdate = { $pull: { pendingRequests: senderId } };
+
+            if (requestType === "ACCEPT") {
+              senderUpdate.$addToSet = { friends: recipientId };
+              recipientUpdate.$addToSet = { friends: senderId };
+            }
+          }
+
+          User.updateOne({_id: recipientId}, recipientUpdate, function(err, raw) {
+            if (err) return res.send(500, {error: err});
+          });
+          User.updateOne({_id: senderId}, senderUpdate, function(err, raw) {
+            if (err) return res.send(500, {error: err});
+          });
+          res.json();
+        }
+      });
+    }
+  });
+});
+
+
 app.put('/api/deck/:id/', function(req, res) {
   let id = req.params.id;
   let content = req.body.content;
