@@ -21,8 +21,12 @@ const userScheme = new mongoose.Schema({
   googleId: String,
   email: String,
   token: String,
+  photo: String,
   givenName: String,
-  familyName: String
+  familyName: String,
+  friends: [mongoose.Schema.Types.ObjectId],
+  incomingRequests: [mongoose.Schema.Types.ObjectId],
+  pendingRequests: [mongoose.Schema.Types.ObjectId]
 });
 
 const instructionScheme = new mongoose.Schema({
@@ -48,6 +52,8 @@ var Game = mongoose.model('Game', gameScheme);
 mongoose.connect(process.env.MONGODB_URI || "mongodb://test:test123@ds213896.mlab.com:13896/heroku_nz567lg6", { useNewUrlParser: true });
 let db = mongoose.connection;
 
+console.log("DB running on: " + process.env.MONGODB_URI || "mongodb://test:test123@ds213896.mlab.com:13896/heroku_nz567lg6");
+
 db.once("open", () => console.log("connected to the database"));
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
@@ -65,7 +71,8 @@ googleAuth(passport);
 app.use(passport.initialize());
 app.use(cookieSession({
     name: 'session',
-    keys: ['123']
+    keys: ['123'],
+    maxAge: 7 * 24 * 60 * 60 * 1000 // cookies will last 1 week
 }));
 app.use(cookieParser());
 app.use(function(req, res, next) {
@@ -118,11 +125,19 @@ app.post('/api/file/', upload.single('file'), function(req, res) {
 
 // READ
 app.get('/', function (req, res, next) {
-  if (req.session.token) {
-    res.cookie('token', req.session.token);
-  } else {
-    res.cookie('token', '');
-  }
+  // if (req.session.token) {
+  //   res.cookie('token', req.session.token);
+  // } else {
+  //   res.cookie('token', '');
+  // }
+  //
+  // if (req.session.id) {
+  //   res.cookie('id', req.session.id)
+  // } else {
+  //   res.cookie('id', '');
+  // }
+  res.cookie('token', req.session.token || '');
+  res.cookie('id', req.session.id || '');
   next();
 });
 
@@ -139,15 +154,20 @@ app.get('/auth/google/callback/', passport.authenticate('google', {failureRedire
   let update = {
     token: req.user.token,
     email: req.user.profile.emails[0].value,
+    photo: req.user.profile.photos[0].value,
     googleId: req.user.profile.id,
     givenName: req.user.profile.name.givenName,
-    familyName: req.user.profile.name.familyName
+    familyName: req.user.profile.name.familyName,
+    friends: [],
+    incomingRequests: [],
+    pendingRequests: []
   }
   let option = {new: true, upsert: true, setDefaultOnInsert: true};
   User.findOneAndUpdate({googleId: req.user.profile.id}, update, option).exec(function(err, user) {
     if (err) return res.send(500, { error: err });
-  })
-  res.redirect('/');
+    req.session.id = user._id;
+    res.redirect('/');
+  });
 });
 
 app.get('/logout/', function (req, res) {
@@ -161,8 +181,7 @@ app.get('/logout/', function (req, res) {
 });
 
 app.get('/api/deck/:id/', function(req, res) {
-  let id = Number(req.params.id);
-  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
+  let id = req.params.id;
   Deck.findById(id, function(err, deck) {
     if (err) return res.send(500, {error : err});
     else if (user === null) return res.send(404, {error: 'Deck not found'});
@@ -171,15 +190,77 @@ app.get('/api/deck/:id/', function(req, res) {
 });
 
 app.get('/api/user/:id/', function(req, res) {
-  let id = Number(req.params.id);
-  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
+  let id = req.params.id;
   User.findById(id, function(err, user) {
     if (err) return res.send(500, {error : err});
     else if (user === null) return res.send(404, {error: 'User not found'});
-    else return res.json(user);
+    else {
+      // Check for token in header
+      let token = req.get('token');
+      if (token === user.token) {
+        return res.json(user);
+      } else {
+        let publicUserInfo = {
+          givenName: user.givenName,
+          familyName: user.familyName,
+          friends: user.friends,
+          photo: user.photo,
+        }
+        return res.json(publicUserInfo);
+      }
+    }
   });
 });
 
+app.get('/api/user/:id/friend/', function(req, res) {
+  let id = req.params.id;
+  User.findById(id, 'friends', function(err, user) {
+    if (err) return res.send(500, {error: err});
+    else if (user === null) return res.send(404, {error: 'User not found'});
+    else if (user.friends === []) return res.json([]);
+    else {
+      User.find({ '_id': { $in: user.friends } }, "friends photo givenName familyName", function(err, users) {
+        if (err) return res.send(500, {error: err});
+        else if (users === null) return res.json([]);
+        else return res.json(users);
+      });
+    }
+  });
+});
+
+app.get('/api/user/:id/friend/requests/', function(req, res) {
+  let id = req.params.id;
+  let token = req.get('token');
+  let type = req.query.type; // "incoming" || "pending"
+  if (!token) {
+    return res.send(401, {error: "No auth token"});
+  } else if (type !== "incoming" && type !== "pending") {
+    return res.send(400, {error: "Incorrect request type: '"+ type + "'. Must be either 'incoming' or 'pending'."})
+  }
+  let field;
+  switch(type) {
+    case "incoming": field = "incomingRequests"; break;
+    case "pending": field = "pendingRequests"; break;
+    default: break;
+  }
+
+  User.findById(id, field + " token", function(err, user) {
+    if (err) return res.send(500, {error: err});
+    else if (user === null) return res.send(404, {error: 'User not found'});
+    else if (user.token !== token) return res.send(401, {error: 'User not authorized'});
+    else if (user[field] === []) return res.json([]);
+    else {
+      User.find({ '_id': { $in: user[field] } }, "friends photo givenName familyName", function(err, users) {
+        if (err) return res.send(500, {error: err});
+        else if (users === null) return res.json([]);
+        else return res.json(users);
+      });
+    }
+  });
+});
+
+
+// DEPRECATED use GET /api/user/:id/ with token in header
 app.get('/api/user/token/:token/', function(req, res) {
   let token = req.params.token;
   User.findOne({token: token}, function(err, user) {
@@ -198,8 +279,7 @@ app.get('/api/games/list/', function(req, res) {
 });
 
 app.get('/api/games/:id/', function(req, res) {
-  let id = Number(req.params.id);
-  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
+  let id = req.params.id;
   Game.findById(id, function(err, game) {
     if (err) return res.send(500, {error: err});
     else if (game === null) return res.send(404, {error: 'Game not found'});
@@ -216,9 +296,70 @@ app.get('/api/user/myDecks', isAuthenticated,  function(req, res) {
 });
 
 // UPDATE
+app.put('/api/user/:id/friend/', function(req, res) {
+  console.log("heres the body", req.body);
+  let recipientId = req.params.id;
+  let senderId = req.body.id;
+  let requestType = req.body.requestType; // "SEND || ACCEPT || DECLINE";
+  let token = req.get('token');
+
+  if (requestType !== "SEND" && requestType !== "ACCEPT" && requestType !== "DECLINE") {
+    return res.send(400, {error: "Incorrect request type: '"+ requestType + "'. Must be either 'SEND', 'ACCEPT', or 'DECLINE'."});
+  } else if (!token) {
+    return res.send(401, {error: "No auth token"});
+  } else if (senderId === recipientId) {
+    return res.send(400, {error: "Identical Ids"});
+  }
+
+  // sender -> guy doing a thing on the client (sending the request, accepting the request or declining the request)
+  // recipient -> the other one
+  User.findById(senderId, function(err, sender) {
+    if (err) return res.send(500, {error: err});
+    else if (sender === null) return res.send(404, {error: "Sending user:" + senderId + " not found"});
+    else {
+      if (!sender.token || sender.token !== token) return res.send(401, {error: "User not authorized"});
+      User.findById(recipientId, function(err, recipient) {
+        if (err) return res.send(500, {error: err});
+        else if (recipient === null) return res.send(404, {error: "Recipient user:" + recipientId + " not found"});
+        else {
+          let senderUpdate = {}
+          let recipientUpdate = {}
+          if (requestType === "SEND") {
+            senderUpdate = { $addToSet: { pendingRequests: recipientId } };
+            recipientUpdate = { $addToSet: { incomingRequests: senderId } };
+          } else {
+
+            // check if there was a friend request from recipient to sender already
+            // if not, send error
+            if (!sender.incomingRequests.includes(recipientId) || !recipient.pendingRequests,includes(senderId)) {
+              return res.send(500, {error: "User: " + recipientId + " has not sent a request to user: " + senderId});
+            }
+
+            senderUpdate = { $pull: { incomingRequests: recipientId } };
+            recipientUpdate = { $pull: { pendingRequests: senderId } };
+
+            if (requestType === "ACCEPT") {
+              senderUpdate.$addToSet = { friends: recipientId };
+              recipientUpdate.$addToSet = { friends: senderId };
+            }
+          }
+
+          User.updateOne({_id: recipientId}, recipientUpdate, function(err, raw) {
+            if (err) return res.send(500, {error: err});
+          });
+          User.updateOne({_id: senderId}, senderUpdate, function(err, raw) {
+            if (err) return res.send(500, {error: err});
+          });
+          res.json();
+        }
+      });
+    }
+  });
+});
+
+
 app.put('/api/deck/:id/', function(req, res) {
-  let id = Number(req.params.id);
-  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
+  let id = req.params.id;
   let content = req.body.content;
   let update = {content: content}
   Deck.findByIdAndUpdate(id, update, function(err, deck) {
@@ -230,8 +371,7 @@ app.put('/api/deck/:id/', function(req, res) {
 
 // DELETE
 app.delete('/api/deck/:id/', function(req, res) {
-  let id = Number(req.params.id);
-  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
+  let id = req.params.id;
   Deck.findByIdAndDelete(id, function(err, deck) {
     if (err) return res.send(500, { error: err });
     else if (deck === null) return res.send(404, {error: "Deck does not exist"});
@@ -240,8 +380,7 @@ app.delete('/api/deck/:id/', function(req, res) {
 });
 
 app.delete('/api/user/:id/', function(req, res) {
-  let id = Number(req.params.id);
-  if (isNaN(id)) return res.send(400, {error: "Invalid id"});
+  let id = req.params.id;
   User.findByIdAndDelete(id, function(err, user) {
     if (err) return res.send(500, { error: err });
     else if (user === null) return res.send(404, {error: "User does not exist"});
@@ -393,13 +532,13 @@ app.get('/api/create-room/', (req, res) => {
           lobby.to(player.socketId).emit('start game', {public: currentGame.public, private: player});
         }
         selectingPhase();
-        
+
         function selectingPhase() {
           for (let socketId in lobby.connected) {
             lobby.connected[socketId].removeAllListeners('disconnect');
             lobby.connected[socketId].on('disconnect', disconnectDuringSelecting(socketId));
           }
-          
+
           //restart the round new round round
           // wipe everything
           // eradicate whites
@@ -411,7 +550,7 @@ app.get('/api/create-room/', (req, res) => {
               player.cards.push({ content: whiteDeck.shift(), owner: player.socketId});
             }
           }
-  
+
           currentGame.private.cardCsarIdx = (currentGame.private.cardCsarIdx + 1) % currentGame.players.length;
           currentGame.public.cardCsar = currentGame.players[currentGame.private.cardCsarIdx].socketId
 
@@ -483,14 +622,14 @@ app.get('/api/create-room/', (req, res) => {
               selectingPhase();
             } else {
               console.log('non card csar left remove their option')
-              currentGame.public.whiteCards = currentGame.public.whiteCards.filter((card) => {                
+              currentGame.public.whiteCards = currentGame.public.whiteCards.filter((card) => {
                 return card.owner === socketId;
               });
               updateClientState('game state update');
             }
           }
         }
-      
+
         function disconnectDuringSelecting(socketId) {
           return () => {
             console.log(`${socketId} disconnected during selecting`)
@@ -521,7 +660,7 @@ app.get('/api/create-room/', (req, res) => {
                 currentGame.public.whiteCards.splice(cardIdx, 1);
               }
               if (currentGame.private.whiteCards.length === currentGame.players.length - 1) {
-                // if everyone left has submitted 
+                // if everyone left has submitted
                 judgingPhase();
               } else {
                 updateClientState('game state update');
