@@ -24,9 +24,9 @@ const userScheme = new mongoose.Schema({
   photo: String,
   givenName: String,
   familyName: String,
-  friends: [mongoose.Schema.Types.ObjectId],
-  incomingRequests: [mongoose.Schema.Types.ObjectId],
-  pendingRequests: [mongoose.Schema.Types.ObjectId]
+  friends: { type: [mongoose.Schema.Types.ObjectId], default: [] },
+  incomingRequests: { type: [mongoose.Schema.Types.ObjectId], default: [] },
+  pendingRequests: { type: [mongoose.Schema.Types.ObjectId], default: [] },
 });
 
 const instructionScheme = new mongoose.Schema({
@@ -157,9 +157,6 @@ app.get('/auth/google/callback/', passport.authenticate('google', {failureRedire
     googleId: req.user.profile.id,
     givenName: req.user.profile.name.givenName,
     familyName: req.user.profile.name.familyName,
-    friends: [],
-    incomingRequests: [],
-    pendingRequests: []
   }
   let option = {new: true, upsert: true, setDefaultOnInsert: true};
   User.findOneAndUpdate({googleId: req.user.profile.id}, update, option).exec(function(err, user) {
