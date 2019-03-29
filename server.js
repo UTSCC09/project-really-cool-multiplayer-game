@@ -341,7 +341,7 @@ app.put('/api/user/:id/friend/', function(req, res) {
           User.updateOne({_id: senderId}, senderUpdate, function(err, raw) {
             if (err) return res.send(500, {error: err});
           });
-          res.json();
+          res.json({});
         }
       });
     }
