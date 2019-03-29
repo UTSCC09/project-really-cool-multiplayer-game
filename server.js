@@ -215,17 +215,49 @@ app.get('/api/user/:id/friend/', function(req, res) {
   let id = req.params.id;
   User.findById(id, 'friends', function(err, user) {
     if (err) return res.send(500, {error: err});
-    else if (user == null) return res.send(404, {error: 'User not found'});
+    else if (user === null) return res.send(404, {error: 'User not found'});
     else if (user.friends === []) return res.json([]);
     else {
       User.find({ '_id': { $in: user.friends } }, "friends photo givenName familyName", function(err, users) {
         if (err) return res.send(500, {error: err});
-        else if (users == null) return res.json([]);
+        else if (users === null) return res.json([]);
         else return res.json(users);
       });
     }
   });
 });
+
+app.get('/api/user/:id/friend/requests/', function(req, res) {
+  let id = req.params.id;
+  let token = req.get('token');
+  let type = req.query.type; // "incoming" || "pending"
+  if (!token) {
+    return res.send(401, {error: "No auth token"});
+  } else if (type !== "incoming" && type !== "pending") {
+    return res.send(400, {error: "Incorrect request type: '"+ type + "'. Must be either 'incoming' or 'pending'."})
+  }
+  let field;
+  switch(type) {
+    case "incoming": field = "incomingRequests"; break;
+    case "pending": field = "pendingRequests"; break;
+    default: break;
+  }
+
+  User.findById(id, field + " token", function(err, user) {
+    if (err) return res.send(500, {error: err});
+    else if (user === null) return res.send(404, {error: 'User not found'});
+    else if (user.token !== token) return res.send(401, {error: 'User not authorized'});
+    else if (user[field] === []) return res.json([]);
+    else {
+      User.find({ '_id': { $in: user[field] } }, "friends photo givenName familyName", function(err, users) {
+        if (err) return res.send(500, {error: err});
+        else if (users === null) return res.json([]);
+        else return res.json(users);
+      });
+    }
+  });
+});
+
 
 // DEPRECATED use GET /api/user/:id/ with token in header
 app.get('/api/user/token/:token/', function(req, res) {
@@ -265,7 +297,7 @@ app.put('/api/user/:id/friend/', function(req, res) {
   if (requestType !== "SEND" && requestType !== "ACCEPT" && requestType !== "DECLINE") {
     return res.send(400, {error: "Incorrect request type: '"+ requestType + "'. Must be either 'SEND', 'ACCEPT', or 'DECLINE'."});
   } else if (!token) {
-    return res.send(401, {error: "User not authorized"});
+    return res.send(401, {error: "No auth token"});
   } else if (senderId === recipientId) {
     return res.send(400, {error: "Identical Ids"});
   }
