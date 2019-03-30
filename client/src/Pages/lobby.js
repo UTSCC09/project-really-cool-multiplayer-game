@@ -7,12 +7,15 @@ class Lobby extends React.Component {
     super(props);
     let params = new URLSearchParams(window.location.search);
     this.roomId = params.get('id');
-    this.state = {players: [], roomOwner: false, phase: 'lobby'};
+    let id = document.cookie.match('(^|;) ?' + 'id' + '=([^;]*)(;|$)');
+    id = id ? id[2] : null;
+    this.state = {players: [], roomOwner: false, phase: 'lobby', clientUserId: id};
     this.state.lobbyState = window.sessionStorage.getItem('nickname-'+this.roomId) ? 'lobby' : 'no nickname';
     this.joinGame = this.joinGame.bind(this);
     this.startGame = this.startGame.bind(this);
     this.kickPlayer = this.kickPlayer.bind(this);
     this.copyLink = this.copyLink.bind(this);
+    this.getDecks = this.getDecks.bind(this);
 
     // TODO: read this from some config file so when we deploy on heroku we don't have to change it each time
     console.log("env:", process.env, "URL:", process.env.URL)
@@ -23,7 +26,11 @@ class Lobby extends React.Component {
     this.lobby.on('player list', (players) => {
       console.log("list of players")
       console.log(players)
+      let roomOwner = this.state.roomOwner;
       this.setState({players: players.map((player) => {return player.username}), roomOwner: players[0].socketId === this.socketId ? true : false});
+      if (!roomOwner && this.state.roomOwner) {
+        this.getDecks();
+      }
     });
     this.lobby.on('start game', (gameState) => {
       this.setState({lobbyState: "game started"});
@@ -60,6 +67,23 @@ class Lobby extends React.Component {
       this.socketId = socketId;
     });
   }
+
+  getDecks() {
+    if (this.state.clientUserId) {
+      fetch('/api/user/' + this.state.clientUserId + '/decks/', {
+        method: "GET"
+      }).then(response => {
+        if (!response.ok) throw Error(response);
+        return response
+      }).then(response => {
+        return response.json();
+      }).then (decks => {
+        console.log("decks from call: ", decks);
+        this.setState({decks: decks});
+      }).catch(err => console.log("err fetching decks", err));
+    }
+  }
+
   render() {
     let players = this.state.players.map((username) => {
       return (
