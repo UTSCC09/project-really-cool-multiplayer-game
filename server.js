@@ -306,6 +306,9 @@ app.get('/api/create-room/', (req, res) => {
         if (callback) {
           callback(socket.id);
         }
+        socket.on('chat message', (message) => {
+          lobby.emit('chat message', {user: username, content: message});
+        });
         lobby.emit('player list', currentGame.players);
       });
 
