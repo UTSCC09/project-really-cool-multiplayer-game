@@ -98,9 +98,50 @@ class Lobby extends React.Component {
     let host = this.state.roomOwner ? "You" : this.state.players[0];
     let game;
     let lobby;
-    let points = [...Array(5).keys()].map((value) => {
-      return (<option id={value + 1}> {value + 1} </option>);
+    const MAXIMUM_SELECTABLE_POINTS = 9;
+    const DEFAULT_POINTS = 5;
+    let pointsOptions = [...Array(MAXIMUM_SELECTABLE_POINTS).keys()].map((value) => {
+      if (value + 1 === DEFAULT_POINTS)
+        return (<option value={value + 1} selected="selected"> {value + 1} </option>);
+      else
+        return (<option value={value + 1}> {value + 1} </option>);
     });
+    let defaultDeck = (<option value="default"> Default Deck </option>);
+    let whiteDeckOptions = [defaultDeck];
+    let blackDeckOptions = [defaultDeck];
+    if (this.state.decks) {
+      for (let deck of this.state.decks) {
+        let deckOption = <option value={deck._id}> {deck.name} </option>;
+        deck.type === "WHITE" ? whiteDeckOptions.push(deckOption) : blackDeckOptions.push(deckOption);
+      }
+    }
+    let settingsBlock
+    if (this.state.roomOwner) {
+      settingsBlock = (
+        <div id="settings">
+          <h3> Settings: </h3>
+            <label for="pointSelect" className="m-1"> Points to win: </label>
+            <select id="points">
+              {pointsOptions}
+            </select>
+
+            <br/>
+
+            <label for="whiteDeckSelect" className="m-1"> White deck: </label>
+            <select id="whiteDeckSelect">
+              {whiteDeckOptions}
+            </select>
+
+            <br/>
+
+            <label for="blackDeckSelect" className="m-1"> Black Deck: </label>
+            <select id="blackDeckSelect">
+              {blackDeckOptions}
+            </select>
+
+          </div>
+        )
+    }
 
 
     switch (this.state.lobbyState) {
@@ -128,20 +169,7 @@ class Lobby extends React.Component {
             <br/>
             <h3> Host: {host} </h3>
             <br/>
-            <div id="settings">
-              <label for="points">Points to win:</label>
-              <select id="points">
-                <option value="1"> 1 </option>
-                <option value="2"> 2 </option>
-                <option value="3"> 3 </option>
-                <option value="4"> 4 </option>
-                <option value="5"> 5 </option>
-                <option value="6"> 6 </option>
-                <option value="7"> 7 </option>
-                <option value="8"> 8 </option>
-                <option value="9"> 9 </option>
-              </select>
-            </div>
+            {settingsBlock}
             <br/>
             <button type="button" className="btn btn-primary mr-3" onClick={this.copyLink}>Copy Link</button>
             {
@@ -156,7 +184,6 @@ class Lobby extends React.Component {
         break;
       default: break;
     }
-
 
     return(
       <div className="w-100 h-100">
