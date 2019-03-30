@@ -1,12 +1,14 @@
 import React from 'react';
 import Game from './game';
 import io from 'socket.io-client';
+import ChatWindow from '../components/ChatWindow';
+import { CLIENT_RENEG_LIMIT } from 'tls';
 
 class Lobby extends React.Component {
   constructor(props) {
     super(props);
     this.joinGame = this.joinGame.bind(this);
-    this.state = {players: [], roomOwner: false, phase: 'lobby'};
+    this.state = {players: [], roomOwner: false, phase: 'lobby', connected: false};
     this.state.lobbyState = window.localStorage.getItem('nickname') ? 'lobby' : 'no nickname';
     this.startGame = this.startGame.bind(this);
     this.kickPlayer = this.kickPlayer.bind(this);
@@ -34,7 +36,9 @@ class Lobby extends React.Component {
     if (username) {
       this.state.username = username;
       this.lobby.emit('join', username, (socketId) => {
+        console.log('already had a username')
         this.socketId = socketId;
+        this.setState({connected: true});
       });
     }
   }
@@ -57,10 +61,14 @@ class Lobby extends React.Component {
     window.localStorage.setItem('nickname', nickname);
     this.setState({lobbyState: "lobby", username: nickname});
     this.lobby.emit('join', nickname, (socketId) => {
+      console.log("join game")
       this.socketId = socketId;
+      this.setState({ connected: true });
     });
   }
+
   render() {
+    console.log(this.state)
     let players = this.state.players.map((username) => {
       return (
           <div className="w-75">
@@ -119,6 +127,7 @@ class Lobby extends React.Component {
         {lobby}
         <canvas id="gameCanvas"></canvas>
         {game}
+        {this.state.connected && <ChatWindow socket={this.lobby}/>}
       </div>
     )
   }
