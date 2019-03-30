@@ -34,6 +34,8 @@ const instructionScheme = new mongoose.Schema({
 });
 
 const deckScheme = new mongoose.Schema({
+  name: String,
+  type: { type: String, enum: ['WHITE', 'BLACK'] }, 
   ownerId: mongoose.Schema.Types.ObjectId,
   cards: [String],
 });
@@ -252,6 +254,14 @@ app.get('/api/user/:id/friend/requests/', function(req, res) {
         else return res.json(users);
       });
     }
+  });
+});
+
+app.get('/api/user/:id/decks/', function(req, res) {
+  let id = req.params.id;
+  Deck.find({ownerId:id}, function(err, decks) {
+    if (err) return res.send(500, {error: err});
+    else return res.json(decks);
   });
 });
 
