@@ -5,18 +5,18 @@ import io from 'socket.io-client';
 class Lobby extends React.Component {
   constructor(props) {
     super(props);
-    this.joinGame = this.joinGame.bind(this);
+    let params = new URLSearchParams(window.location.search);
+    this.roomId = params.get('id');
     this.state = {players: [], roomOwner: false, phase: 'lobby'};
-    this.state.lobbyState = window.localStorage.getItem('nickname') ? 'lobby' : 'no nickname';
+    this.state.lobbyState = window.sessionStorage.getItem('nickname-'+this.roomId) ? 'lobby' : 'no nickname';
+    this.joinGame = this.joinGame.bind(this);
     this.startGame = this.startGame.bind(this);
     this.kickPlayer = this.kickPlayer.bind(this);
     this.copyLink = this.copyLink.bind(this);
-    let params = new URLSearchParams(window.location.search);
-    let roomId = params.get('id');
 
     // TODO: read this from some config file so when we deploy on heroku we don't have to change it each time
     console.log("env:", process.env, "URL:", process.env.URL)
-    this.lobby = io.connect(process.env.REACT_APP_URL+roomId);
+    this.lobby = io.connect(process.env.REACT_APP_URL+this.roomId);
     this.lobby.on('room full', () => {
       // TODO: room is full
     });
@@ -30,7 +30,7 @@ class Lobby extends React.Component {
       console.log(`start game, initial cards: ${gameState.private.cards}`)
     });
     // TODO: Give a default username on connect if none
-    let username = window.localStorage.getItem('nickname');
+    let username = window.sessionStorage.getItem('nickname-'+this.roomId);
     if (username) {
       this.state.username = username;
       this.lobby.emit('join', username, (socketId) => {
@@ -54,7 +54,7 @@ class Lobby extends React.Component {
   joinGame() {
     let nickname = document.getElementById('nickname').value;
     nickname = nickname || Math.random().toString(36).slice(2);; //TODO real random name
-    window.localStorage.setItem('nickname', nickname);
+    window.sessionStorage.setItem('nickname-'+this.roomId, nickname);
     this.setState({lobbyState: "lobby", username: nickname});
     this.lobby.emit('join', nickname, (socketId) => {
       this.socketId = socketId;
