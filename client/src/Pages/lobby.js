@@ -74,6 +74,11 @@ class Lobby extends React.Component {
     let host = this.state.roomOwner ? "You" : this.state.players[0];
     let game;
     let lobby;
+    let points = [...Array(5).keys()].map((value) => {
+      return (<option id={value + 1}> {value + 1} </option>);
+    });
+
+
     switch (this.state.lobbyState) {
       case "no nickname": lobby = (
         <div id="main-container" className="d-flex flex-column justify-content-center align-items-center p-2">
@@ -98,6 +103,21 @@ class Lobby extends React.Component {
             <div className="w-25"> <ul className="list-group"> {players} </ul> </div>
             <br/>
             <h3> Host: {host} </h3>
+            <br/>
+            <div id="settings">
+              <label for="points">Points to win:</label>
+              <select id="points">
+                <option value="1"> 1 </option>
+                <option value="2"> 2 </option>
+                <option value="3"> 3 </option>
+                <option value="4"> 4 </option>
+                <option value="5"> 5 </option>
+                <option value="6"> 6 </option>
+                <option value="7"> 7 </option>
+                <option value="8"> 8 </option>
+                <option value="9"> 9 </option>
+              </select>
+            </div>
             <br/>
             <button type="button" className="btn btn-primary mr-3" onClick={this.copyLink}>Copy Link</button>
             {
