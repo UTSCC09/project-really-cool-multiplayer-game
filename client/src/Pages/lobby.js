@@ -47,7 +47,20 @@ class Lobby extends React.Component {
   }
 
   startGame() {
-    this.lobby.emit('start game');
+    let pointSelect = document.getElementById('pointSelect');
+    let whiteDeckSelect = document.getElementById('whiteDeckSelect');
+    let blackDeckSelect = document.getElementById('blackDeckSelect');
+    let winningPoints = pointSelect.options[pointSelect.selectedIndex].value;
+    let whiteDeckId = whiteDeckSelect.options[whiteDeckSelect.selectedIndex].value;
+    let blackDeckId = blackDeckSelect.options[blackDeckSelect.selectedIndex].value;
+
+    let settings = {
+      winningPoints: winningPoints,
+      whiteDeckId: whiteDeckId,
+      blackDeckId: blackDeckId
+    };
+
+    this.lobby.emit('start game', settings);
   }
 
   kickPlayer(username) {
