@@ -91,7 +91,6 @@ class ChatForm extends React.Component {
     return (
       <form onSubmit={this.handleSubmit} className="form-inline">
         <input type="text" placeholder="Enter a message" value={this.state.message} onChange={this.handleChange} className="form-control mb-2 mr-sm-2"/>
-        {/* <button className="btn btn-primary mb-2">Send Message</button> */}
       </form>
     );
   }
