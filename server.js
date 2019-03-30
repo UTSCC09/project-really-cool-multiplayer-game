@@ -213,7 +213,7 @@ app.get('/api/user/:id/friend/', function(req, res) {
   User.findById(id, 'friends', function(err, user) {
     if (err) return res.send(500, {error: err});
     else if (user === null) return res.send(404, {error: 'User not found'});
-    else if (user.friends === []) return res.json([]);
+    else if (user.friends.length === 0) return res.json([]);
     else {
       User.find({ '_id': { $in: user.friends } }, "friends photo givenName familyName", function(err, users) {
         if (err) return res.send(500, {error: err});
@@ -244,7 +244,7 @@ app.get('/api/user/:id/friend/requests/', function(req, res) {
     if (err) return res.send(500, {error: err});
     else if (user === null) return res.send(404, {error: 'User not found'});
     else if (user.token !== token) return res.send(401, {error: 'User not authorized'});
-    else if (user[field] === []) return res.json([]);
+    else if (user[field].length === 0) return res.json([]);
     else {
       User.find({ '_id': { $in: user[field] } }, "friends photo givenName familyName", function(err, users) {
         if (err) return res.send(500, {error: err});
@@ -319,8 +319,8 @@ app.put('/api/user/:id/friend/', function(req, res) {
 
             // check if there was a friend request from recipient to sender already
             // if not, send error
-            if (!sender.incomingRequests.includes(recipientId) || !recipient.pendingRequests,includes(senderId)) {
-              return res.send(500, {error: "User: " + recipientId + " has not sent a request to user: " + senderId});
+            if (!(sender.incomingRequests.indexOf(recipientId) !== -1) || !(recipient.pendingRequests.includes(senderId + "") !== -1)) {
+              return res.send(400, {error: "User: " + recipientId + " has not sent a request to user: " + senderId});
             }
 
             senderUpdate = { $pull: { incomingRequests: recipientId } };
