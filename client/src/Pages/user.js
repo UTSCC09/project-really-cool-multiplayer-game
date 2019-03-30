@@ -114,11 +114,6 @@ class User extends React.Component {
     let friendRequestsInfo;
 
     if (this.state.friends) {
-      console.log(this.state.friends);
-      console.log(!(this.state.friends.find((user) => {return user._id === clientUserId})));
-      console.log(clientUserId);
-      console.log(!clientPage);
-
       if (!(this.state.friends.find((user) => {return user._id === clientUserId})) && clientUserId && !clientPage) {
         friendButton = (<button type="button" className="btn btn-primary m-1" onClick={() => {this.friendRequestResponse("SEND")}}> Add Friend </button>)
       }
