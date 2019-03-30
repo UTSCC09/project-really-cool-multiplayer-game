@@ -102,7 +102,7 @@ class Lobby extends React.Component {
             <button type="button" className="btn btn-primary mr-3" onClick={this.copyLink}>Copy Link</button>
             {
               this.state.roomOwner &&
-              <button type="button" className="btn btn-success" onClick={this.startGame}>Start Game</button>
+              <button type="button" className="btn btn-success" onClick={this.startGame} disabled={this.state.players.length < 3}>Start Game</button>
             }
           </div>
         );

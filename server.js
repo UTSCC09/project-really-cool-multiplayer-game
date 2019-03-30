@@ -309,9 +309,17 @@ app.get('/api/create-room/', (req, res) => {
         lobby.emit('player list', currentGame.players);
       });
 
-      socket.once('start game', startGame);
+      socket.on('start game', startGame);
       async function startGame(settings) {
+        // not enough people to start game
+        if (currentGame.players.length < 3) {
+          return;
+        } else {
+          // remove listener so can't start game multiple times
+          lobby.connected[currentGame.players[0].socketId].removeAllListeners('start game');
+        }
         for (let socketId in lobby.connected) {
+          // remove disconnect event for when in lobby
           lobby.connected[socketId].removeAllListeners('disconnect');
         }
         console.log(`start game: ${roomId}`);
