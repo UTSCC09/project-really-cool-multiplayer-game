@@ -5,7 +5,7 @@ class User extends React.Component {
     super(props);
     this.getUser = this.getUser.bind(this);
     this.getFriends = this.getFriends.bind(this);
-    this.addFriend = this.addFriend.bind(this);
+    this.friendRequestResponse = this.friendRequestResponse.bind(this);
     this.getIncomingFriendRequests = this.getIncomingFriendRequests.bind(this);
     let userId = props.match.params.id;
     let id = document.cookie.match('(^|;) ?' + 'id' + '=([^;]*)(;|$)');
@@ -73,15 +73,19 @@ class User extends React.Component {
     }
   }
 
-  addFriend() {
+  friendRequestResponse(type, id) {
     let token = document.cookie.match('(^|;) ?' + 'token' + '=([^;]*)(;|$)');
     token = token ? token[2] : null;
+    let senderId = this.state.clientUserId;
+    let recipientId = id || this.state.userId;
+
+
     if (token && this.state.clientUserId) {
-      fetch('/api/user/' + this.state.userId + '/friend/', {
+      fetch('/api/user/' + recipientId + '/friend/', {
         method: "PUT",
         body: JSON.stringify({
-          id: this.state.clientUserId,
-          requestType: "SEND"
+          id: senderId,
+          requestType: type
         }),
         headers: {
           "token": token,
@@ -94,24 +98,33 @@ class User extends React.Component {
         return response.json();
       }).then(response => {
         console.log("Final response: ", response); // get user?
+        this.getFriends();
+        this.getIncomingFriendRequests();
       }).catch(err => console.log("err sending friend request", err));
     }
   }
 
   render() {
     console.log(this.state);
+    let clientPage = this.state.userId === this.state.clientUserId;
+    let clientUserId = this.state.clientUserId;
     let friendsInfo;
     let friendButton;
     let friendRequests;
     let friendRequestsInfo;
 
     if (this.state.friends) {
-      if (!this.state.friends.includes(this.clientUserId)) {
-        friendButton = (<button type="button" className="btn btn-primary m-1" onClick={this.addFriend}> Add Friend </button>)
+      console.log(this.state.friends);
+      console.log(!(this.state.friends.find((user) => {return user._id === clientUserId})));
+      console.log(clientUserId);
+      console.log(!clientPage);
+
+      if (!(this.state.friends.find((user) => {return user._id === clientUserId})) && clientUserId && !clientPage) {
+        friendButton = (<button type="button" className="btn btn-primary m-1" onClick={() => {this.friendRequestResponse("SEND")}}> Add Friend </button>)
       }
-      friendsInfo = this.state.friends !== [] && !this.state.friends ? this.state.friends.map((user) => {
+      friendsInfo = (this.state.friends.indexOf(clientUserId) !== 0 && this.state.friends) ? this.state.friends.map((user) => {
         return (
-          <div className="w-75">
+          <div className="w-50">
             <li className="list-group-item ml-3">
               <span>
                 <img src={user.photo} className="profileImgSm d-inline-block m-2"/>
@@ -121,25 +134,29 @@ class User extends React.Component {
           </div>
         )
       }) : (
-        <span> You have no friends! </span>
+        <span> {clientPage ? "You have" : this.state.user.givenName + " has"} no friends! </span>
       );
     }
-    if (this.state.clientUserId === this.state.userId  && this.state.incomingRequests) {
+    if (clientPage && this.state.incomingRequests) {
       // this.state.incomingRequests do a map
-      friendRequests = this.state.incomingRequests !== [] && this.state.incomingRequests ? this.state.incomingRequests.map((user) => {
+      // console.log(this.state.incomingRequests && this.state.incomingRequests !== []);
+      // console.log(this.state.incomingRequests !== [], this.state.incomingRequests);
+      friendRequests = (this.state.incomingRequests && (this.state.incomingRequests.length !== 0)) ? this.state.incomingRequests.map((user) => {
         return (
-          <div className="w-75">
+          <div className="w-50">
             <li className="list-group-item ml-3">
               <span>
                 <img src={user.photo} className="profileImgSm d-inline-block m-2"/>
                 {user.givenName + " " + user.familyName}
+                <button type="button" className="btn btn-success m-2" onClick={() => {this.friendRequestResponse("ACCEPT", user._id)}}> Accept </button>
+                <button type="button" className="btn btn-danger m-2" onClick={() => {this.friendRequestResponse("DECLINE", user._id)}}> Decline </button>
               </span>
             </li>
           </div>
         )
       }) : (
         <span> You have no friend requests! </span>
-      )
+      );
       if (friendRequests) {
         friendRequestsInfo =  (
           <div>
