@@ -4,7 +4,7 @@
 require("dotenv").config();
 
 const mongoose = require('mongoose');
-const sanitizer = require('mongo-sanitize');
+const sanitize = require('mongo-sanitize');
 const express = require('express');
 const app = express();
 const server = require('http').createServer(app);
