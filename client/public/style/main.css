@@ -25,3 +25,19 @@ html, body {
 .no-overflow {
   overflow: hidden;
 }
+
+.profileImg {
+  height: 48px;
+  width: 48px;
+  border-radius: 50%;
+}
+
+.profileImgSm {
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+}
+
+.clickable {
+  cursor: pointer;
+}

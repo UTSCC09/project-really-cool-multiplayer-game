@@ -23,96 +23,7 @@ const PLAYERHUD_STROKE_COLOR = 'black';
 // temporary variables
 var curChosenCard = null;
 var lobby;
-// test event
-let waitingState = {
-  phase: "waiting",
-  public: {
-    blackCard: "Put your funni Joke here: _____",
-    cardCsar: "You",
-    setting: {winningScore: 5},
-    players: [{username:"Jimbo", score: 1},
-              {username:"Craig", score: 2},
-              {username:"Mike", score: 3},
-              {username:"Dungus", score: 4},
-              {username:"Bongo", score: 1},
-              {username:"Current Csar Man", score: 2},
-              {username:"Yo Moma", score: 3},
-              {username:"You", score: 4}],
-    whiteCards: [],
-    winner: ""
-  },
-  private: {
-    cards: ["Peen", "BIG Peen", "CHUNGUS Peen", "I'm in love with my cosplay girlfriend. She's a manchild and better than you.", "Eating Out at Denny's", "Mispelling Words", "Funni Scream"],
-    username: "You",
-    socketId: "78iurf3"
-}};
-let pickingState = {
-  phase: "picking",
-  public: {
-    blackCard: "Put your funni Joke here: _____",
-    cardCsar: "Current Csar Man",
-    setting: {winningScore: 5},
-    players: [{username:"Jimbo", score: 1},
-              {username:"Craig", score: 2},
-              {username:"Mike", score: 3},
-              {username:"Dungus", score: 4},
-              {username:"Bongo", score: 1},
-              {username:"Current Csar Man", score: 2},
-              {username:"Yo Moma", score: 3},
-              {username:"You", score: 4}],
-    whiteCards: [],
-    winner: ""
-  },
-  private: {
-    cards: ["Peen", "BIG Peen", "CHUNGUS Peen", "I'm in love with my cosplay girlfriend. She's a manchild and better than you.", "Eating Out at Denny's", "Mispelling Words", "Funni Scream"],
-    username: "You",
-    socketId: "78iurf3"
-}};
-let judgingState = {
-  phase: "judging",
-  public: {
-    blackCard: "Put your funni Joke here: _____",
-    cardCsar: "Current Csar Man",
-    setting: {winningScore: 5},
-    players: [{username:"Jimbo", score: 1},
-              {username:"Craig", score: 2},
-              {username:"Mike", score: 3},
-              {username:"Dungus", score: 4},
-              {username:"Bongo", score: 1},
-              {username:"Current Csar Man", score: 2},
-              {username:"Yo Moma", score: 3},
-              {username:"You", score: 4}],
-    whiteCards: ["Did you know? video games make your weenus big", "Smashing Pumpkins", "M&M is also a candy", "Lobotomy", "Afghanistan", "Grey's Anatomy", "Fortnite Skins", "Drake Like's Them Young"],
-    winner: ""
-  },
-  private: {
-    cards: ["Peen", "BIG Peen", "CHUNGUS Peen", "I'm in love with my cosplay girlfriend. She's a manchild and better than you.", "Eating Out at Denny's", "Mispelling Words", "Funni Scream"],
-    username: "You",
-    socketId: "78iurf3"
-}};
-let gameoverState = {
-  phase: "game over",
-  public: {
-    blackCard: "Put your funni Joke here: _____",
-    cardCsar: "Current Csar Man",
-    setting: {winningScore: 5},
-    players: [{username:"Jimbo", score: 1},
-              {username:"Craig", score: 2},
-              {username:"Mike", score: 3},
-              {username:"Dungus", score: 4},
-              {username:"Bongo", score: 1},
-              {username:"Current Csar Man", score: 2},
-              {username:"Yo Moma", score: 3},
-              {username:"You", score: 4}],
-    whiteCards: ["Did you know? video games make your weenus big", "Smashing Pumpkins", "M&M is also a candy", "Lobotomy", "Afghanistan", "Grey's Anatomy", "Fortnite Skins", "Drake Like's Them Young"],
-    winner: "Jimbo"
-  },
-  private: {
-    cards: ["Peen", "BIG Peen", "CHUNGUS Peen", "I'm in love with my cosplay girlfriend. She's a manchild and better than you.", "Eating Out at Denny's", "Mispelling Words", "Funni Scream"],
-    username: "You",
-    socketId: "78iurf3"
-}};
-let lobbyState = {phase: "lobby"};
+var curGameState = null;
 
 
 function drawCard(x, y, card, cardColor, textColor, emit, isSelectable) {
@@ -261,8 +172,22 @@ function drawPlayerInfo(players, curPlayerId, curCardCsar) {
   }
 }
 
+function drawPlayerPrompt(prompt) {
+  return () => {
+    let paper = window.paper;
+    let maxHeight = paper.view.size.height;
+    let prompt_point_y = maxHeight - TABLE_PLAYER_SPACE + (TABLE_PLAYER_SPACE - CARD_HEIGHT)/2
+    let prompt_point_x = HAND_PADDING_X;
+    var promptText = new paper.PointText(prompt_point_x, prompt_point_y)
+    promptText.content = prompt;
+    promptText.fillColor = 'green';
+  };
+}
+
 function renderScreen(gameState) {
   return () => {
+    // update curGameState
+    curGameState = gameState;
     let paper = window.paper;
     // clear the canvas
     paper.project.clear();
@@ -292,6 +217,20 @@ function renderScreen(gameState) {
       drawCard(blackCard_x, blackCard_y, {content: gameState.public.blackCard}, 'black', 'white').call();
       // draw public white cards
       drawCardRow(0, maxHeight/2 - CARD_HEIGHT/2, maxWidth, gameState.public.whiteCards, null, null, isJudging?'card selected':'waiting', isJudging?true:false).call();
+      // draw user prompt
+      let prompt;
+      switch(gameState.phase) {
+        case 'picking':
+          prompt = 'Please Pick a Card From Your Hand.';
+          break;
+        case 'waiting':
+          prompt = 'Please Wait...';
+          break;
+        case 'judging':
+          prompt = 'Pick a Card! Any Card!';
+          break;
+      }
+      drawPlayerPrompt(prompt).call();
     } else if (gameState.phase === "game over") {
       let isWinner = gameState.public.winner === gameState.private.socketId;
       // draw table
@@ -300,6 +239,14 @@ function renderScreen(gameState) {
       drawWinOverlay(isWinner).call();
     }
   };
+}
+
+function redrawState() {
+  return () => {
+    if (curGameState) {
+      renderScreen(curGameState).call();
+    }
+  }
 }
 
 
@@ -378,8 +325,16 @@ class Game extends React.Component {
       </div>
     )
   }
+
   componentDidMount() {
+    window.addEventListener("resize", redrawState.call());
   }
+
+  componentWillUnmount() {
+    curGameState = null;
+    window.removeEventListener("resize", redrawState.call());
+  }
+
 }
 
 export default Game;

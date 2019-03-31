@@ -1,7 +1,8 @@
 .DS_Store
 node_modules/
 *.orig
-package-lock.json
+*package-lock.json
 .idea/
 .vscode/
 db
+*env.local
