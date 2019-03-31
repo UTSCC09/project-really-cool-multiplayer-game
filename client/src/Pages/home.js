@@ -55,11 +55,14 @@ class Home extends React.Component {
     window.location.href = '/auth/google/';
   }
 
-
   render() {
     let userPane = this.state.user ? (
       <div className="d-flex flex-column justify-content-start align-items-start p-2">
-        <button type="button" className="btn btn-primary m-1" onClick={this.logOut}> Log out</button>
+        <span>
+          <img src={this.state.user.photo} className="profileImgSm d-inline-block m-2"/>
+          {this.state.user.givenName + " " + this.state.user.familyName}
+          <button type="button" className="btn btn-primary m-1 ml-2" onClick={this.logOut}> Log out</button>
+        </span>
       </div>
     ) : (
       <div className="d-flex flex-column justify-content-start align-items-start p-2">
@@ -84,8 +87,8 @@ class Home extends React.Component {
             </span>
           </div>
 
-          <div className="d-flex flex-column justify-content-end align-items-start p-2 invisible">
-            <button type="button" className="btn btn-primary m-1"> Log in</button>
+          <div className="invisible">
+            {userPane}
           </div>
         </div>
     )
