@@ -77,7 +77,7 @@ class Home extends React.Component {
       window.location.href = '/user/' + this.state.clientUserId + '/';
     }
   }
-  
+
   render() {
     let userPane = this.state.user ? (
       <div className="d-flex flex-column justify-content-start align-items-start p-2">
@@ -96,7 +96,7 @@ class Home extends React.Component {
     );
 
     return(
-      <div>
+      <div className="h-100">
         <div id="main-container" className="d-flex justify-content-between">
           {userPane}
           <div className="d-flex flex-column justify-content-center align-items-center p-2">
@@ -112,6 +112,11 @@ class Home extends React.Component {
                 <button type="button" className="btn btn-primary m-3" onClick={this.joinGame}>Join a Game</button>
               </div>
             </form>
+            <div id="privacyPolicy" className="align-bottom">
+              <a href="/privacy-policy">
+                Privacy Policy
+              </a>
+            </div>
           </div>
 
           <div className="invisible">
