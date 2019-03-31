@@ -30,7 +30,8 @@ const userScheme = new mongoose.Schema({
   pendingRequests: { type: [mongoose.Schema.Types.ObjectId], default: [] },
 });
 
-const MINIMUM_CARDS_PER_DECK = 60;
+const MINIMUM_CARDS_WHITE = 60;
+const MINIMUM_CARDS_BLACK = 10;
 const deckScheme = new mongoose.Schema({
   name: String,
   type: { type: String, enum: ['WHITE', 'BLACK'] },
@@ -77,14 +78,16 @@ app.use(function(req, res, next) {
 // CREATE
 app.post('/api/deck/', isAuthenticated, function(req, res) {
   let deckContent = sanitize(req.body.content);
-  // removing duplicates
-  let deckContentUnique = new Set(deckContent);
-  deckContent = Array.from(deckContentUnique);
-  if (deckContent.length < MINIMUM_CARDS_PER_DECK) {
-    return res.status(400).send({ error: "Not enough unique cards in deck, must have at least " + MINIMUM_CARDS_PER_DECK });
-  }
   let deckName = sanitize(req.body.name);
   let deckType = sanitize(req.body.type);
+  if (deckType !== "WHITE" && deckType !== "BLACK") return res.status(400).send({"Deck type must be either WHITE or BLACK"})
+  let deckContentUnique = new Set(deckContent);
+  deckContent = Array.from(deckContentUnique);
+  let min = (deckType === "WHITE" ? MINIMUM_CARDS_WHITE : MINIMUM_CARDS_BLACK)
+  if (deckContent.length < min) {
+    return res.status(400).send({ error: "Not enough unique cards in deck, " + deckType + " decks must have at least " + min});
+  }
+
   let newDeck = new Deck({name: deckName, type: deckType, cards: deckContent, ownerId: req.session.id});
   newDeck.save(function(err, newDeck) {
     if (err) return res.status(500).send({error: err});
@@ -298,16 +301,17 @@ app.put('/api/user/:id/friend/', function(req, res) {
 
 app.put('/api/deck/:id/', function(req, res) {
   let id = sanitize(req.params.id);
-  let content = sanitize(req.body.content);
-  // removing duplicates
-  let contentUnique = new Set(content);
-  content = Array.from(contentUnique);
-  if (content.length < MINIMUM_CARDS_PER_DECK) {
-    return res.status(400).send({ error: "Not enough unique cards in deck, must have at least " + MINIMUM_CARDS_PER_DECK });
-  }
+  let deckContent = sanitize(req.body.content);
   let deckName = sanitize(req.body.name);
   let deckType = sanitize(req.body.type);
-  let update = {name: deckName, type: deckType, cards: content};
+  if (deckType !== "WHITE" && deckType !== "BLACK") return res.status(400).send({"Deck type must be either WHITE or BLACK"})
+  let deckContentUnique = new Set(deckContent);
+  deckContent = Array.from(deckContentUnique);
+  let min = (deckType === "WHITE" ? MINIMUM_CARDS_WHITE : MINIMUM_CARDS_BLACK)
+  if (deckContent.length < min) {
+    return res.status(400).send({ error: "Not enough unique cards in deck, " + deckType + " decks must have at least " + min});
+  }
+  let update = {name: deckName, type: deckType, cards: deckContent};
   Deck.findByIdAndUpdate(id, update, function(err, deck) {
     if (err) return res.status(500).send({ error: err });
     else if (deck === null) return res.status(404).send({error: "Deck does not exist"});
