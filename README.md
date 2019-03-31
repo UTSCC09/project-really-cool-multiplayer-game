@@ -1,4 +1,5 @@
-# Big Boiz Bungalo (Tentative)
+# Shuffle With Friends
+Url: http://shufflewithfriends.herokuapp.com/
 # The Team
 Aaron (Yi Shiun) Chiu, Bilal Khan, Alex Green
 # Description
