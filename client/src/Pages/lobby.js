@@ -27,7 +27,7 @@ class Lobby extends React.Component {
       console.log("list of players")
       console.log(players)
       let roomOwner = this.state.roomOwner;
-      this.setState({players: players.map((player) => {return player.username}), roomOwner: players[0].socketId === this.socketId ? true : false});
+      this.setState({players: players, roomOwner: players[0].socketId === this.socketId ? true : false});
       if (!roomOwner && this.state.roomOwner) {
         this.getDecks();
       }
@@ -63,8 +63,11 @@ class Lobby extends React.Component {
     this.lobby.emit('start game', settings);
   }
 
-  kickPlayer(username) {
+  kickPlayer(player) {
     // Disconnect player with given username
+    if (this.state.roomOwner) {
+      this.lobby.emit('kick player', player.socketId);  
+    }
   }
 
   copyLink() {
@@ -98,21 +101,23 @@ class Lobby extends React.Component {
   }
 
   render() {
-    let players = this.state.players.map((username) => {
+    let players = this.state.players.map((player) => {
+      let displayKick = this.state.roomOwner && player.socketId === this.state.players[0].socketId
+      let username = player.username;
       return (
           <div className="w-75" >
             <li className="list-group-item ml-3 container">
               <div className="row">
                 <span className="col-8 my-auto">{username}</span>
                 <div className="text-right col-4">
-                  {this.state.roomOwner && <button type="button" className="btn btn-danger align-middle" onClick={this.kickPlayer(username)}> X </button>}
+                  { displayKick && <button type="button" className="btn btn-danger align-middle" onClick={this.kickPlayer(player)}> X </button>}
                 </div>
               </div>
             </li>
           </div>
       )
     });
-    let host = this.state.roomOwner ? "You" : this.state.players[0];
+    let host = this.state.roomOwner ? "You" : this.state.players[0].username;
     let game;
     let lobby;
     const MAXIMUM_SELECTABLE_POINTS = 9;
