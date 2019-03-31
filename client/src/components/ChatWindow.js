@@ -4,9 +4,10 @@ class ChatWindow extends React.Component {
   constructor(props) {
     super(props);
     this.sendMessage = this.sendMessage.bind(this);
+    this.toggleDisplay = this.toggleDisplay.bind(this);
     this.scrollToBottom = this.scrollToBottom.bind(this);
     this.socket = props.socket
-    this.state = { messages: []}; // message = {user: blah, content: blah}
+    this.state = { messages: [], shouldDisplay: false}; // message = {user: blah, content: blah}
     this.socket.on('chat message', (message) => {
       console.log(`received message:`)
       console.log(message)
@@ -21,6 +22,11 @@ class ChatWindow extends React.Component {
       console.log(`sending message: ${message}`)
       this.socket.emit('chat message', message);
     }
+  }
+
+  toggleDisplay(e) {
+    this.setState({shouldDisplay: !this.state.shouldDisplay});
+    e.preventDefault();
   }
 
   scrollToBottom() {
@@ -51,11 +57,16 @@ class ChatWindow extends React.Component {
       return (<ChatMessage user={message.user} content={message.content} />)
     });
     return (
-      <div className="position-fixed" style={{bottom: 0, left: "10px"}}>
-        <div id="chat" ref="chatMessages">
-          {messages}
+      <div className="position-fixed d-flex align-items-end" style={{bottom: 0, left: "10px"}}>
+        <button className="btn btn-secondary mb-2" onClick={this.toggleDisplay}>
+          <span class="oi oi-chat" title="chat" aria-hidden="true"></span>
+        </button>
+        <div style={{display: this.state.shouldDisplay ? 'inline-block' : 'none'}}>
+          <div id="chat" className="mb-1 bg-light" ref="chatMessages">
+            {messages}
+          </div>
+          <ChatForm onSubmit={this.sendMessage} />
         </div>
-        <ChatForm onSubmit={this.sendMessage}/>
       </div>
     )
   }
@@ -91,7 +102,7 @@ class ChatForm extends React.Component {
 
   render() {
     return (
-      <form onSubmit={this.handleSubmit} className="form-inline">
+      <form onSubmit={this.handleSubmit} className="form">
         <input type="text" placeholder="Enter a message" value={this.state.message} onChange={this.handleChange} className="form-control mb-2 mr-sm-2"/>
       </form>
     );
