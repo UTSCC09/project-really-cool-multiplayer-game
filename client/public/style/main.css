@@ -17,7 +17,7 @@ html, body {
 
 #chat {
   max-height: 25vh;
-  max-width: 220px;
+  max-width: 250px;
   overflow-y: auto;
   overflow-wrap: break-word;
 }
