@@ -206,6 +206,21 @@ app.get('/api/games/:id/', function(req, res) {
   });
 });
 
+app.get('/api/lobby/:id/status', function(req, res) {
+  let lobby = games[req.params.id];
+  if (!lobby) {
+    res.status(404).end();
+  } else {
+    let message
+    if (lobby.phase !== 'lobby') {
+      message = 'game is already in progress';
+    } else if (lobby.numPlayers >= 8) {
+      message = 'game lobby is full';
+    }
+    res.status(200).send(message);
+  }
+});
+
 // UPDATE
 app.put('/api/deck/:id/', function(req, res) {
   let id = Number(req.params.id);
@@ -280,6 +295,7 @@ let games = {};
 app.get('/api/create-room/', (req, res) => {
     let roomId = crypto.randomBytes(5).toString('hex');
     console.log(`new room ${roomId}`)
+    games[roomId] = {numPlayers: 0, phase: "lobby"};
     let currentGame = { public: {}, players: [] };
 
     function updateClientState(eventName) {
@@ -292,16 +308,18 @@ app.get('/api/create-room/', (req, res) => {
     lobby.on('connection', (socket) => {
       console.log("person connected")
 
-      if (currentGame.players.length >= 8) {
-        // room is full
-        socket.emit('room full');
-        socket.disconnect()
-      }
-
       socket.on('join', (username, callback) => {
+        if (games[roomId].numPlayers < 8) {
+          games[roomId].numPlayers++;
+        } else {
+          socket.disconnect();
+        }
         console.log(`${username} joined ${roomId}`)
         // TODO:  change function if they're joining mid-game
         console.log(`${username}: ${socket.id}`)
+        if (currentGame.players.length === 0) {
+          socket.on('start game', startGame);
+        }
         currentGame.players.push({username, socketId: socket.id});
         if (callback) {
           callback(socket.id);
@@ -312,15 +330,17 @@ app.get('/api/create-room/', (req, res) => {
         lobby.emit('player list', currentGame.players);
       });
 
-      socket.on('start game', startGame);
       async function startGame(settings) {
         // not enough people to start game
         if (currentGame.players.length < 3) {
           return;
-        } else {
-          // remove listener so can't start game multiple times
-          lobby.connected[currentGame.players[0].socketId].removeAllListeners('start game');
         }
+        // remove start game listener so can't start game multiple times
+        lobby.connected[currentGame.players[0].socketId].removeAllListeners('start game');
+        // remove connection listener so new people can't join a room in progress
+        lobby.removeAllListeners('connection');
+        games[roomId].phase = "playing";
+
         for (let socketId in lobby.connected) {
           // remove disconnect event for when in lobby
           lobby.connected[socketId].removeAllListeners('disconnect');
@@ -545,6 +565,7 @@ app.get('/api/create-room/', (req, res) => {
           // person was room host
           lobby.connected[currentGame.players[0].socketId].on('start game', startGame);
         }
+        games[roomId].numPlayers--;
         lobby.emit('player list', currentGame.players);
       }
 

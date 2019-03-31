@@ -8,39 +8,53 @@ class Lobby extends React.Component {
   constructor(props) {
     super(props);
     this.joinGame = this.joinGame.bind(this);
-    this.state = {players: [], roomOwner: false, phase: 'lobby', connected: false};
-    this.state.lobbyState = window.localStorage.getItem('nickname') ? 'lobby' : 'no nickname';
+    this.state = {players: [], roomOwner: false, phase: 'lobby', connected: false, lobbyState: 'connecting'};
     this.startGame = this.startGame.bind(this);
     this.kickPlayer = this.kickPlayer.bind(this);
     this.copyLink = this.copyLink.bind(this);
     let params = new URLSearchParams(window.location.search);
     this.roomId = params.get('id');
-
-    // TODO: read this from some config file so when we deploy on heroku we don't have to change it each time
-    console.log("env:", process.env, "URL:", process.env.URL)
-    this.lobby = io.connect(process.env.REACT_APP_URL+this.roomId);
-    this.lobby.on('room full', () => {
-      // TODO: room is full
+    
+    console.log(process.env.REACT_APP_URL)
+    console.log(`${process.env.REACT_APP_URL}api/lobby/${this.roomId}/status`)
+    fetch(`${process.env.REACT_APP_URL}api/lobby/${this.roomId}/status`).then((response) => {
+      if (response.ok) {
+        return response.text();
+      } else if (response.status === 404) {
+        throw new Error('Game lobby with that id was not found.');
+      }
+      throw new Error('There was an error communicating with the server');
+    }).then((text) => {
+      console.log(text)
+      if (text) {
+        this.setState({lobbyState: 'error', error: text});
+      } else {        
+        this.setState({lobbyState: window.localStorage.getItem('nickname') ? 'lobby' : 'no nickname'});
+        console.log("env:", process.env, "URL:", process.env.URL)
+        this.lobby = io.connect(process.env.REACT_APP_URL+this.roomId);
+        this.lobby.on('player list', (players) => {
+          console.log("list of players")
+          console.log(players)
+          this.setState({players: players.map((player) => {return player.username}), roomOwner: players[0].socketId === this.socketId ? true : false});
+        });
+        this.lobby.on('start game', (gameState) => {
+          this.setState({lobbyState: "game started"});
+          console.log(`start game, initial cards: ${gameState.private.cards}`)
+        });
+        // TODO: Give a default username on connect if none
+        let username = window.localStorage.getItem('nickname');
+        if (username) {
+          this.state.username = username;
+          this.lobby.emit('join', username, (socketId) => {
+            console.log('already had a username')
+            this.socketId = socketId;
+            this.setState({connected: true});
+          });
+        }
+      }
+    }).catch((err) => {
+      this.setState({ lobbyState: 'error', error: err.message });
     });
-    this.lobby.on('player list', (players) => {
-      console.log("list of players")
-      console.log(players)
-      this.setState({players: players.map((player) => {return player.username}), roomOwner: players[0].socketId === this.socketId ? true : false});
-    });
-    this.lobby.on('start game', (gameState) => {
-      this.setState({lobbyState: "game started"});
-      console.log(`start game, initial cards: ${gameState.private.cards}`)
-    });
-    // TODO: Give a default username on connect if none
-    let username = window.localStorage.getItem('nickname');
-    if (username) {
-      this.state.username = username;
-      this.lobby.emit('join', username, (socketId) => {
-        console.log('already had a username')
-        this.socketId = socketId;
-        this.setState({connected: true});
-      });
-    }
   }
 
   startGame() {
@@ -123,7 +137,17 @@ class Lobby extends React.Component {
   }
 
   render() {
-    console.log(this.state)
+    if (this.state.lobbyState === 'error') {
+      return (
+        <div>
+          <h1> <a href="/" className="text-dark"> Shuffle With Friends </a> </h1>
+          <div class="alert alert-danger" role="alert">
+            {this.state.error}
+          </div>
+        </div>
+      );
+    }
+
     let players = this.state.players.map((username) => {
       return (
           <div className="w-75">
@@ -132,7 +156,7 @@ class Lobby extends React.Component {
             {username}
             </li>
           </div>
-      )
+      );
     });
     let host = this.state.roomOwner ? "You" : this.state.players[0];
     let game;
@@ -156,7 +180,7 @@ class Lobby extends React.Component {
         // Settings
       case "lobby": lobby = (
           <div>
-            <h1> Shuffle With Friends </h1>
+          <h1> <a href="/" className="text-dark"> Shuffle With Friends </a> </h1>
             <h2> Players: </h2>
             <div className="w-25"> <ul className="list-group"> {players} </ul> </div>
             <br/>
@@ -177,14 +201,14 @@ class Lobby extends React.Component {
     }
 
 
-    return(
+    return (
       <div className="w-100 h-100 no-overflow">
         {lobby}
         <canvas id="gameCanvas" />
         {game}
         {this.state.connected && <ChatWindow socket={this.lobby}/>}
       </div>
-    )
+    );
   }
 }
 
