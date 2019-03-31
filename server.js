@@ -76,6 +76,9 @@ app.use(function(req, res, next) {
 // CREATE
 app.post('/api/deck/', isAuthenticated, function(req, res) {
   let deckContent = sanitize(req.body.content);
+  // removing duplicates
+  let deckContentUnique = new Set(deckContent);
+  deckContent = Array.from(deckContentUnique);
   let deckName = sanitize(req.body.name);
   let deckType = sanitize(req.body.type);
   let newDeck = new Deck({name: deckName, type: deckType, cards: deckContent, ownerId: req.session.id});
@@ -292,6 +295,9 @@ app.put('/api/user/:id/friend/', function(req, res) {
 app.put('/api/deck/:id/', function(req, res) {
   let id = sanitize(req.params.id);
   let content = sanitize(req.body.content);
+  // removing duplicates
+  let contentUnique = new Set(content);
+  content = Array.from(contentUnique);
   let deckName = sanitize(req.body.name);
   let deckType = sanitize(req.body.type);
   let update = {name: deckName, type: deckType, cards: content};
