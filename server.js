@@ -377,6 +377,7 @@ app.get('/api/create-room/', (req, res) => {
 
       socket.once('start game', startGame);
       async function startGame(settings) {
+        console.log("Game Settings:", settings);
         for (let socketId in lobby.connected) {
           lobby.connected[socketId].removeAllListeners('disconnect');
         }
@@ -387,7 +388,7 @@ app.get('/api/create-room/', (req, res) => {
         // fetch (get deck from database here)
 
         // Host decided settings are set here for the game
-        
+
         let whiteDeckId = sanitize(settings.whiteDeckId);
         let blackDeckId = sanitize(settings.blackDeckId);
 
@@ -401,7 +402,7 @@ app.get('/api/create-room/', (req, res) => {
         currentGame.public = {
           blackCard: "",
           cardCsar: '',
-          settings: {winningScore: settings.winningPoints},
+          settings: {winningScore: Number(settings.winningPoints)},
           players: [],  // {username, score}
           whiteCards: [],
           winner: '',
