@@ -315,7 +315,6 @@ app.get('/api/create-room/', (req, res) => {
           socket.disconnect();
         }
         console.log(`${username} joined ${roomId}`)
-        // TODO:  change function if they're joining mid-game
         console.log(`${username}: ${socket.id}`)
         if (currentGame.players.length === 0) {
           socket.on('start game', startGame);
@@ -325,6 +324,7 @@ app.get('/api/create-room/', (req, res) => {
           callback(socket.id);
         }
         socket.on('chat message', (message) => {
+          // convert to string because while react deals with xss on its own, if it's passed an object it'll mess things up
           lobby.emit('chat message', {user: username, content: String(message)});
         });
         lobby.emit('player list', currentGame.players);
@@ -392,8 +392,6 @@ app.get('/api/create-room/', (req, res) => {
         shuffle(whiteDeck)
         shuffle(blackDeck)
 
-        //TODO shuffle decks`
-
         let initialCards = 7;
         currentGame.public.players = currentGame.players.map((player) => {
           return { username: player.username, socketId: player.socketId, score: 0 };
@@ -441,24 +439,31 @@ app.get('/api/create-room/', (req, res) => {
           updateClientState('black card');
           for (let player of currentGame.players) {
             if (player.socketId !== currentGame.public.cardCsar) {
-              lobby.connected[player.socketId].once('white card submit',(submittedCard) => {
+              let submitCard = (submittedCard) => {
                 console.log(`${submittedCard.owner} selected ${submittedCard.content}`)
                 // TODO: cards should have ids instead of filtering on content
                 let currPlayer = currentGame.players.find((player) => {
                   return submittedCard.owner === player.socketId;
                 });
-                currPlayer.cards = currPlayer.cards.filter((card) => {
-                  return card.content !== submittedCard.content;
+                let idx = currPlayer.cards.findIndex((card) => {
+                  return card.content === submittedCard.content;
                 });
+                if (idx === -1) {
+                  // the card wasn't a card in the player's hand. i.e. cheating
+                  lobby.connected[player.socketId].once('white card submit', submitCard);
+                  return;
+                }
+                currPlayer.cards.splice(idx, 1);
                 //put the white card in the private array
                 currentGame.private.whiteCards.push(submittedCard);
                 // display empty white card to everyone
-                currentGame.public.whiteCards.push({content: '', owner: submittedCard.owner});
+                currentGame.public.whiteCards.push({ content: '', owner: submittedCard.owner });
                 updateClientState('game state update');
                 if (currentGame.private.whiteCards.length === currentGame.players.length - 1) {
                   judgingPhase();
                 }
-              });
+              }
+              lobby.connected[player.socketId].once('white card submit', submitCard);
             }
           }
         }
