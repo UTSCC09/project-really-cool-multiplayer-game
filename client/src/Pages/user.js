@@ -8,6 +8,7 @@ class User extends React.Component {
     this.friendRequestResponse = this.friendRequestResponse.bind(this);
     this.getIncomingFriendRequests = this.getIncomingFriendRequests.bind(this);
     this.toUserPage = this.toUserPage.bind(this);
+    this.handleInputChange = this.handleInputChange.bind(this);
     let userId = props.match.params.id;
     let id = document.cookie.match('(^|;) ?' + 'id' + '=([^;]*)(;|$)');
     id = id ? id[2] : null
@@ -19,6 +20,9 @@ class User extends React.Component {
       newDeckToggle: true,
       submitState: null,
       deckListIndex: -1,
+      formNameInput: null,
+      formTypeInput: null,
+      formContentInput: null,
       clientUserId: id};
     this.formInput = {name: React.createRef(), type: React.createRef(), content: React.createRef()};
     this.getUser();
@@ -97,7 +101,7 @@ class User extends React.Component {
       this.setState({decks: decks});
     }).catch(err => console.log("err fetching friends", err));
   }
-  
+
   friendRequestResponse(type, id) {
     let token = document.cookie.match('(^|;) ?' + 'token' + '=([^;]*)(;|$)');
     token = token ? token[2] : null;
@@ -133,7 +137,7 @@ class User extends React.Component {
     if (user && user._id) {
       window.location.href = '/user/' + user._id + '/';
     }
-  }  
+  }
   setAddDeckState(bool, deckListIndex) {
     let res = {};
     if (this.state.newDeckToggle !== bool) {
@@ -141,6 +145,10 @@ class User extends React.Component {
     }
     if (this.state.deckListIndex !== deckListIndex) {
       res.deckListIndex = deckListIndex;
+      console.log(this.state.decks[deckListIndex]);
+      res.formNameInput = deckListIndex!==-1?this.state.decks[deckListIndex].name:"";
+      res.formTypeInput = deckListIndex!==-1?this.state.decks[deckListIndex].type:"";
+      res.formContentInput= deckListIndex!==-1?this.state.decks[deckListIndex].cards.toString():"";
     }
     this.setState(res);
   }
@@ -207,6 +215,16 @@ class User extends React.Component {
     this.setState({submitState: 'update'}, this.handleForm)
   }
 
+  handleInputChange(event) {
+    const target = event.target;
+    const value = target.value;
+    const name = target.name;
+
+    this.setState({
+      [name]: value
+    });
+  }
+
   render() {
     console.log(this.state);
     let clientPage = this.state.userId === this.state.clientUserId;
@@ -220,7 +238,7 @@ class User extends React.Component {
       if (!(this.state.friends.find((user) => {return user._id === clientUserId})) && clientUserId && !clientPage) {
         friendButton = (<button type="button" className="btn btn-primary m-1" onClick={() => {this.friendRequestResponse("SEND")}}> Add Friend </button>)
       }
-      friendsInfo = (this.state.friends.indexOf(clientUserId) !== 0 && this.state.friends) ? this.state.friends.map((user) => {
+      friendsInfo = (this.state.friends && this.state.friends.length !== 0) ? this.state.friends.map((user) => {
         return (
           <div className="w-50">
             <li className="list-group-item ml-3">
@@ -318,11 +336,11 @@ class User extends React.Component {
       <form>
         <div className="form-group">
         <label for="deck-name-input">Deck Name</label>
-        <input name="name" type="text" ref={this.formInput.name} className="form-control" id="deck-name-input" defaultValue={this.state.deckListIndex!==-1?this.state.decks[this.state.deckListIndex].name:""} disabled={this.state.clientUserId !== this.state.userId}></input>
+        <input name="formNameInput" type="text" ref={this.formInput.name} className="form-control" id="deck-name-input" disabled={this.state.clientUserId !== this.state.userId} value={this.state.formNameInput} onChange={this.handleInputChange}></input>
         </div>
         <div className="form-group">
           <label for="deck-type-select">Deck Type</label>
-          <select name="type" ref={this.formInput.type} className="custom-select mr-sm-2" id="deck-type-select" disabled={this.state.clientUserId !== this.state.userId}>
+          <select name="formTypeInput" ref={this.formInput.type} className="custom-select mr-sm-2" id="deck-type-select" disabled={this.state.clientUserId !== this.state.userId} value={this.state.formTypeInput} onChange={this.handleInputChange}>
             <option>Choose...</option>
             <option value="BLACK" selected={this.state.deckListIndex!==-1?this.state.decks[this.state.deckListIndex].type==='BLACK':false}>Black Deck</option>
             <option value="WHITE" selected={this.state.deckListIndex!==-1?this.state.decks[this.state.deckListIndex].type==='WHITE':false}>White Deck</option>
@@ -330,7 +348,7 @@ class User extends React.Component {
         </div>
         <div className="form-group">
           <label for="cards-text-area">Cards</label>
-          <input name="content" ref={this.formInput.content} className="form-control" id="cards-text-area" placeholder="Enter your custom cards seperated by comma's." defaultValue={this.state.deckListIndex!==-1?this.state.decks[this.state.deckListIndex].cards.toString():""} disabled={this.state.clientUserId !== this.state.userId}></input>
+          <textarea name="formContentInput" rows="4" ref={this.formInput.content} className="form-control" id="cards-text-area" placeholder="Enter your custom cards seperated by comma's." disabled={this.state.clientUserId !== this.state.userId} value={this.state.formContentInput} onChange={this.handleInputChange}></textarea>
         </div>
         {deckSubmitCond}
       </form>
@@ -342,6 +360,8 @@ class User extends React.Component {
       <div>
         <h1> <a href={url} className="text-dark"> Shuffle With Friends </a> </h1>
         {userInfo}
+        <br/>
+        <h3> Custom Decks: </h3>
         <div className="px-5 py-2">
           <span className='container' id='deck-form-container'>
             {deckForm}
