@@ -59,7 +59,7 @@ class Lobby extends React.Component {
       whiteDeckId: whiteDeckId,
       blackDeckId: blackDeckId
     };
-    
+
     this.lobby.emit('start game', settings);
   }
 
@@ -100,10 +100,14 @@ class Lobby extends React.Component {
   render() {
     let players = this.state.players.map((username) => {
       return (
-          <div className="w-75">
-            <li className="list-group-item ml-3">
-            {this.state.roomOwner && <button type="button" className="btn btn-danger mr-3" onClick={this.kickPlayer(username)}> X </button>}
-            {username}
+          <div className="w-75" >
+            <li className="list-group-item ml-3 container">
+              <div className="row">
+                <span className="col-8 my-auto">{username}</span>
+                <div className="text-right col-4">
+                  {this.state.roomOwner && <button type="button" className="btn btn-danger align-middle" onClick={this.kickPlayer(username)}> X </button>}
+                </div>
+              </div>
             </li>
           </div>
       )
@@ -134,7 +138,7 @@ class Lobby extends React.Component {
         <div id="settings">
           <h3> Settings: </h3>
             <label for="pointSelect" className="m-1"> Points to win: </label>
-            <select id="points">
+            <select id="pointSelect">
               {pointsOptions}
             </select>
 
