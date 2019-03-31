@@ -587,6 +587,9 @@ app.get('/api/create-room/', (req, res) => {
             if (currentGame.public.players[idx].score === currentGame.public.settings.winningScore) {
               currentGame.public.winner = currentGame.public.players[idx].socketId;
               updateClientState('game over');
+              for (let socketId in lobby.connected) {
+                lobby.connected[socketId].removeAllListeners('disconnect');
+              }
               return; //TODO play againstuff here
             }
             selectingPhase();
@@ -696,21 +699,23 @@ app.get('/api/create-room/', (req, res) => {
         let idx = currentGame.players.findIndex((player) => {
           return player.socketId === socketId;
         });
-        currentGame.players.splice(idx, 1);
-        // nobody left, destroy the namespace
-        if (currentGame.players.length === 0) {
-          // lobby is empty so remove it
-          delete currentGame;
-          // removes the namespace https://stackoverflow.com/questions/26400595/socket-io-how-do-i-remove-a-namespace
-          const connectedSockets = Object.keys(lobby.connected); // Get Object with Connected SocketIds as properties
-          connectedSockets.forEach(socketId => {
-            lobby.connected[socketId].removeAllListeners('disconnect');
-            lobby.connected[socketId].disconnect(); // Disconnect Each socket
-          });
-          lobby.removeAllListeners();
-          delete io.nsps[lobby];
-          delete games[roomId];
-          return -1;
+        if (idx !== -1) {
+          currentGame.players.splice(idx, 1);
+          // nobody left, destroy the namespace
+          if (currentGame.players.length === 0) {
+            // lobby is empty so remove it
+            delete currentGame;
+            // removes the namespace https://stackoverflow.com/questions/26400595/socket-io-how-do-i-remove-a-namespace
+            const connectedSockets = Object.keys(lobby.connected); // Get Object with Connected SocketIds as properties
+            connectedSockets.forEach(socketId => {
+              lobby.connected[socketId].removeAllListeners('disconnect');
+              lobby.connected[socketId].disconnect(); // Disconnect Each socket
+            });
+            lobby.removeAllListeners();
+            delete io.nsps[lobby];
+            delete games[roomId];
+            return -1;
+          }
         }
         return idx;
       }
