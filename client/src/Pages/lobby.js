@@ -18,17 +18,23 @@ class Lobby extends React.Component {
     this.copyLink = this.copyLink.bind(this);
     this.getDecks = this.getDecks.bind(this);
     fetch(`${process.env.REACT_APP_URL}api/lobby/${this.roomId}/status`).then((response) => {
+      console.log('got response')
       if (response.ok) {
+        console.log('response ok')
         return response.text();
       } else if (response.status === 404) {
+        console.log('response not ok');
         throw new Error('Game lobby with that id was not found.');
       }
       throw new Error('There was an error communicating with the server');
     }).then((text) => {
       if (text) {
+        console.log(text);
         this.setState({lobbyState: 'error', error: text});
-      } else {        
-        this.state.lobbyState = window.sessionStorage.getItem('nickname-'+this.roomId) ? 'lobby' : 'no nickname';
+      } else {
+        console.log('no error')
+        this.setState({lobbyState: window.sessionStorage.getItem('nickname-'+this.roomId) ? 'lobby' : 'no nickname'});
+        console.log(this.state.lobbyState)
         console.log("env:", process.env, "URL:", process.env.URL)
         this.lobby = io.connect(process.env.REACT_APP_URL+this.roomId);
         this.lobby.on('player list', (players) => {
