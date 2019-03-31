@@ -26,3 +26,7 @@ html, body {
   width: 32px;
   border-radius: 50%;
 }
+
+.clickable {
+  cursor: pointer;
+}
