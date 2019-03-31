@@ -342,6 +342,8 @@ class User extends React.Component {
       <div>
         <h1> <a href={url} className="text-dark"> Shuffle With Friends </a> </h1>
         {userInfo}
+        <br/>
+        <h3> Custom Decks: </h3>
         <div className="px-5 py-2">
           <span className='container' id='deck-form-container'>
             {deckForm}
