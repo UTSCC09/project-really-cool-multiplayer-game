@@ -66,7 +66,7 @@ class Lobby extends React.Component {
   kickPlayer(player) {
     // Disconnect player with given username
     if (this.state.roomOwner) {
-      this.lobby.emit('kick player', player.socketId);  
+      this.lobby.emit('kick player', player.socketId);
     }
   }
 
@@ -117,7 +117,7 @@ class Lobby extends React.Component {
           </div>
       )
     });
-    let host = this.state.roomOwner ? "You" : this.state.players[0].username;
+    let host = this.state.roomOwner ? "You" : (this.state.players[0] ? this.state.players[0].username : "not loaded");
     let game;
     let lobby;
     const MAXIMUM_SELECTABLE_POINTS = 9;
