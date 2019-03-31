@@ -476,10 +476,10 @@ app.get('/api/create-room/', (req, res) => {
         let blackDeckId = settings.blackDeckId;
 
         if (!whiteDeckId || whiteDeckId === "default") {
-          // TODO set id of default white deck here
+          whiteDeckId = "5c8dc89d47e8042ba5673c20";
         }
         if (!blackDeckId || blackDeckId === "default") {
-          // TODO set id of default black id here
+          blackDeckId = "5c8dc7c0b6aa482b6f8ac885";
         }
 
         currentGame.public = {
@@ -499,10 +499,10 @@ app.get('/api/create-room/', (req, res) => {
         }
 
         // TODO change these to ids received from settings
-        // let whiteDeck = await Deck.findById(whiteDeckId).cards;
-        // let blackDeck = await Deck.findById(blackDeckId).cards;
-        let whiteDeck = game.decks.get('whiteDeck').cards;
-        let blackDeck = game.decks.get('blackDeck').cards;
+        let whiteDeck = await Deck.findById(whiteDeckId).cards;
+        let blackDeck = await Deck.findById(blackDeckId).cards;
+        // let whiteDeck = game.decks.get('whiteDeck').cards;
+        // let blackDeck = game.decks.get('blackDeck').cards;
 
         // https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
         function shuffle(a) {

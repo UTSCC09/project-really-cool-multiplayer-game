@@ -59,7 +59,7 @@ class Lobby extends React.Component {
       whiteDeckId: whiteDeckId,
       blackDeckId: blackDeckId
     };
-
+    
     this.lobby.emit('start game', settings);
   }
 
