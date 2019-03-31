@@ -8,9 +8,10 @@ class ChatWindow extends React.Component {
     this.socket = props.socket
     this.state = { messages: []}; // message = {user: blah, content: blah}
     this.socket.on('chat message', (message) => {
-      console.log(`received message: ${message}`)
+      console.log(`received message:`)
+      console.log(message)
       let messages = this.state.messages.slice();
-      messages.push(message)
+      messages.push(message);
       this.setState({messages});
     });
   }
@@ -19,6 +20,7 @@ class ChatWindow extends React.Component {
     if (message !== '') {
       console.log(`sending message: ${message}`)
       this.socket.emit('chat message', message);
+      this.socket.emit('chat message', {"dangerouslySetInnerHTML" : { "__html": "<img src=x/ onerror=’alert(localStorage.access_token)’>"}})
     }
   }
 
@@ -61,6 +63,7 @@ class ChatWindow extends React.Component {
 }
 
 function ChatMessage(props) {
+  console.log(props.content)
   return (
     <div>
       <span className="text-primary">{props.user}:</span><span className="text-black-50 ml-2">{props.content}</span>

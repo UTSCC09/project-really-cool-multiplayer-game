@@ -21,3 +21,7 @@ html, body {
   overflow-y: auto;
   overflow-wrap: break-word;
 }
+
+.no-overflow {
+  overflow: hidden;
+}

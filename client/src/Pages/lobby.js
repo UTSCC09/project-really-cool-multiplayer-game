@@ -171,16 +171,16 @@ class Lobby extends React.Component {
         );
         break;
       case "game started":
-        game = (<Game lobby={this.lobby} socketId={this.socketId}></Game>);
+        game = (<Game lobby={this.lobby} socketId={this.socketId} />);
         break;
       default: break;
     }
 
 
     return(
-      <div className="w-100 h-100">
+      <div className="w-100 h-100 no-overflow">
         {lobby}
-        <canvas id="gameCanvas"></canvas>
+        <canvas id="gameCanvas" />
         {game}
         {this.state.connected && <ChatWindow socket={this.lobby}/>}
       </div>
