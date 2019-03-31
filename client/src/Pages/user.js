@@ -10,7 +10,7 @@ class User extends React.Component {
     this.toUserPage = this.toUserPage.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
     let userId = props.match.params.id;
-    let id = document.cookie.match('(^|;) ?' + 'id' + '=([^;]*)(;|$)');
+    let id = document.cookie.match('(^|;) ?id=([^;]*)(;|$)');
     id = id ? id[2] : null
     this.state =
     { userId: userId,
@@ -37,7 +37,7 @@ class User extends React.Component {
 
   getUser() {
     // https://plainjs.com/javascript/utilities/set-cookie-get-cookie-and-delete-cookie-5/
-    let token = document.cookie.match('(^|;) ?' + 'token' + '=([^;]*)(;|$)');
+    let token = document.cookie.match('(^|;) ?token=([^;]*)(;|$)');
     token = token ? token[2] : null;
     fetch('/api/user/' + this.state.userId + '/', {
       method: "GET",
@@ -71,7 +71,7 @@ class User extends React.Component {
   }
 
   getIncomingFriendRequests() {
-    let token = document.cookie.match('(^|;) ?' + 'token' + '=([^;]*)(;|$)');
+    let token = document.cookie.match('(^|;) ?token=([^;]*)(;|$)');
     token = token ? token[2] : null;
     if (token && (this.state.clientUserId === this.state.userId)) {
       fetch('/api/user/' + this.state.userId + '/friend/requests?type=incoming', {
@@ -106,7 +106,7 @@ class User extends React.Component {
   }
 
   friendRequestResponse(type, id) {
-    let token = document.cookie.match('(^|;) ?' + 'token' + '=([^;]*)(;|$)');
+    let token = document.cookie.match('(^|;) ?token=([^;]*)(;|$)');
     token = token ? token[2] : null;
     let senderId = this.state.clientUserId;
     let recipientId = id || this.state.userId;
@@ -164,7 +164,7 @@ class User extends React.Component {
     let nameInput = this.formInput.name.current.value;
     let typeInput = this.formInput.type.current.value;
     let contentInput = this.formInput.content.current.value.split(',');
-    let isNameInputValid = nameInput.length != 0;
+    let isNameInputValid = nameInput.length !== 0;
     let isTypeInputValid = typeInput === 'BLACK' || typeInput === 'WHITE';
     let isContentInputValidB = contentInput.length > 10
     let isContentInputValidW = contentInput.length > 60
@@ -268,7 +268,7 @@ class User extends React.Component {
           <div className="w-50">
             <li className="list-group-item ml-3">
               <span onClick={() => {this.toUserPage(user)}} className="clickable">
-                <img src={user.photo} className="profileImgSm d-inline-block m-2"/>
+                <img src={user.photo} className="profileImgSm d-inline-block m-2" alt="" />
                 {user.givenName + " " + user.familyName}
               </span>
             </li>
@@ -284,7 +284,7 @@ class User extends React.Component {
           <div className="w-50">
             <li className="list-group-item ml-3">
               <span>
-                <img src={user.photo} className="profileImgSm d-inline-block m-2"/>
+                <img src={user.photo} className="profileImgSm d-inline-block m-2" alt="" />
                 {user.givenName + " " + user.familyName}
                 <button type="button" className="btn btn-success m-2" onClick={() => {this.friendRequestResponse("ACCEPT", user._id)}}> Accept </button>
                 <button type="button" className="btn btn-danger m-2" onClick={() => {this.friendRequestResponse("DECLINE", user._id)}}> Decline </button>
@@ -309,7 +309,7 @@ class User extends React.Component {
     let userInfo = this.state.user ? (
       <div>
         <h2>
-          <img src={this.state.user.photo} className="profileImg d-inline-block"/>
+          <img src={this.state.user.photo} className="profileImg d-inline-block" alt="" />
           <span> {this.state.user.givenName + " " + this.state.user.familyName} </span>
           {friendButton}
         </h2>

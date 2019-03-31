@@ -243,6 +243,7 @@ function renderScreen(gameState) {
         case 'judging':
           prompt = 'Pick a Card! Any Card!';
           break;
+        default:
       }
       drawPlayerPrompt(prompt).call();
     } else if (gameState.phase === "game over") {
@@ -273,7 +274,7 @@ class Game extends React.Component {
       console.log(document.getElementById('gameCanvas'));
       paper.setup('gameCanvas');
       // add text wrappinig (I STOLE THIS FROM STACK EXCHANGE)
-      // TODO: find wherei i stole this
+      // https://stackoverflow.com/questions/14011859/can-i-linebreak-in-paper-js-library
       paper.PointText.prototype.wordwrap=function(txt,max){
         var lines=[];
         var space=-1;
