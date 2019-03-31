@@ -91,8 +91,8 @@ app.post('/api/deck/', isAuthenticated, function(req, res) {
   let newDeck = new Deck({name: deckName, type: deckType, cards: deckContent, ownerId: req.session.id});
   newDeck.save(function(err, newDeck) {
     if (err) return res.status(500).send({error: err});
+    return res.json(newDeck._id);
   });
-  return res.json(newDeck._id);
 });
 
 var multer  = require('multer')
