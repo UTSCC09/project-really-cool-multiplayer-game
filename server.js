@@ -387,11 +387,7 @@ app.get('/api/create-room/', (req, res) => {
         // fetch (get deck from database here)
 
         // Host decided settings are set here for the game
-
-        // Settings will have game in it
-        let gameId = "5c8dcad255c6482c14aa7326"; // settings.gameId
-        let game = await Game.findById(gameId);
-
+        
         let whiteDeckId = sanitize(settings.whiteDeckId);
         let blackDeckId = sanitize(settings.blackDeckId);
 
