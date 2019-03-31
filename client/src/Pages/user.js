@@ -151,7 +151,7 @@ class User extends React.Component {
       console.log(this.state.decks[deckListIndex]);
       res.formNameInput = deckListIndex!==-1?this.state.decks[deckListIndex].name:"";
       res.formTypeInput = deckListIndex!==-1?this.state.decks[deckListIndex].type:"";
-      res.formContentInput= deckListIndex!==-1?this.state.decks[deckListIndex].cards.toString():"";
+      res.formContentInput= deckListIndex!==-1?this.state.decks[deckListIndex].cards.toString().replace(/,/g,'<>'):"";
       res.nameInputIsValid = true;
       res.typeInputIsValid = true;
       res.contentInputIsValid = true;
@@ -163,7 +163,7 @@ class User extends React.Component {
     //sanitize
     let nameInput = this.formInput.name.current.value;
     let typeInput = this.formInput.type.current.value;
-    let contentInput = this.formInput.content.current.value.split(',');
+    let contentInput = this.formInput.content.current.value.split('<>');
     let isNameInputValid = nameInput.length !== 0;
     let isTypeInputValid = typeInput === 'BLACK' || typeInput === 'WHITE';
     let isContentInputValidB = contentInput.length > 10
@@ -379,7 +379,7 @@ class User extends React.Component {
         </div>
         <div className="form-group">
           <label for="cards-text-area">Cards</label>
-          <textarea name="formContentInput" rows="4" ref={this.formInput.content} className={"form-control"+(this.state.contentInputIsValid?"":" is-invalid")} id="cards-text-area" placeholder="Enter your custom cards seperated by commas." disabled={this.state.clientUserId !== this.state.userId} value={this.state.formContentInput} onChange={this.handleInputChange}></textarea>
+          <textarea name="formContentInput" rows="4" ref={this.formInput.content} className={"form-control"+(this.state.contentInputIsValid?"":" is-invalid")} id="cards-text-area" placeholder="Enter your custom cards seperated by '<>'." disabled={this.state.clientUserId !== this.state.userId} value={this.state.formContentInput} onChange={this.handleInputChange}></textarea>
           <div class="invalid-feedback">
             Invalid Input. Please add enough cards for your respective deck type.
           </div>
