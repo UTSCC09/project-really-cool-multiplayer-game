@@ -590,7 +590,7 @@ app.get('/api/create-room/', (req, res) => {
               for (let socketId in lobby.connected) {
                 lobby.connected[socketId].removeAllListeners('disconnect');
               }
-              return; //TODO play againstuff here
+              return;
             }
             selectingPhase();
           });

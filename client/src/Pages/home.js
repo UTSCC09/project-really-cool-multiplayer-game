@@ -9,7 +9,7 @@ class Home extends React.Component {
     this.logOut = this.logOut.bind(this);
     this.authenticate = this.authenticate.bind(this);
     this.toUserPage = this.toUserPage.bind(this);
-    let id = document.cookie.match('(^|;) ?' + 'id' + '=([^;]*)(;|$)');
+    let id = document.cookie.match('(^|;) ?id=([^;]*)(;|$)');
     id = id ? id[2] : null
     this.state = { user: null, clientUserId: id }
     this.getUser();
@@ -17,7 +17,7 @@ class Home extends React.Component {
 
   getUser() {
     // https://plainjs.com/javascript/utilities/set-cookie-get-cookie-and-delete-cookie-5/
-    let token = document.cookie.match('(^|;) ?' + 'token' + '=([^;]*)(;|$)');
+    let token = document.cookie.match('(^|;) ?token=([^;]*)(;|$)');
     token = token ? token[2] : null;
     let id = this.state.clientUserId;
 
@@ -83,7 +83,7 @@ class Home extends React.Component {
       <div className="d-flex flex-column justify-content-start align-items-start p-2">
         <span>
           <div onClick={this.toUserPage} className="d-inline-block clickable">
-            <img src={this.state.user.photo} className="profileImgSm d-inline-block m-2"/>
+            <img src={this.state.user.photo} className="profileImgSm d-inline-block m-2" alt=""/>
             {this.state.user.givenName + " " + this.state.user.familyName}
           </div>
           <button type="button" className="btn btn-primary m-1 ml-2" onClick={this.logOut}> Log out</button>
@@ -101,15 +101,17 @@ class Home extends React.Component {
           {userPane}
           <div className="d-flex flex-column justify-content-center align-items-center p-2">
             <h1> Shuffle With Friends </h1>
-            <span>
-              Nickname:
-              <input id="nickname" className="ml-2"></input>
-            </span>
-            If you don't choose one we'll make one for you
-            <span>
-              <button type="button" className="btn btn-primary m-3" onClick={this.createGame}>Host Game</button>
-              <button type="button" className="btn btn-primary m-3" onClick={this.joinGame}>Join a Game</button>
-            </span>
+            <form>
+              <div className="d-flex justify-content-center align-items-center">
+                Nickname:
+                <input id="nickname" className="ml-2"></input>
+              </div>
+              If you don't choose one we'll make one for you
+              <div className="d-flex justify-content-center">
+                <button type="submit" className="btn btn-primary m-3" onClick={this.createGame}>Host Game</button>
+                <button type="button" className="btn btn-primary m-3" onClick={this.joinGame}>Join a Game</button>
+              </div>
+            </form>
           </div>
 
           <div className="invisible">

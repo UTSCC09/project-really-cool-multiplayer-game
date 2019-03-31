@@ -2,14 +2,13 @@ import React from 'react';
 import Game from './game';
 import io from 'socket.io-client';
 import ChatWindow from '../components/ChatWindow';
-import { CLIENT_RENEG_LIMIT } from 'tls';
 
 class Lobby extends React.Component {
   constructor(props) {
     super(props);
     let params = new URLSearchParams(window.location.search);
     this.roomId = params.get('id');
-    let id = document.cookie.match('(^|;) ?' + 'id' + '=([^;]*)(;|$)');
+    let id = document.cookie.match('(^|;) ?id=([^;]*)(;|$)');
     id = id ? id[2] : null;
     this.state = {players: [], roomOwner: false, phase: 'lobby', clientUserId: id, connected: false, lobbyState: 'connecting'};
     this.joinGame = this.joinGame.bind(this);
@@ -265,14 +264,16 @@ class Lobby extends React.Component {
       case "no nickname": lobby = (
         <div id="main-container" className="d-flex flex-column justify-content-center align-items-center p-2">
           <h1> Shuffle With Friends </h1>
-          <span>
-            Nickname:
-            <input id="nickname" className="ml-2"></input>
-          </span>
-          If you don't choose one we'll make one for you
-          <span>
-            <button type="button" className="btn btn-primary m-3" onClick={this.joinGame}>Join Game</button>
-          </span>
+          <form>
+            <div className="d-flex justify-content-center align-items-center">
+              Nickname:
+              <input id="nickname" className="ml-2"></input>
+            </div>
+            If you don't choose one we'll make one for you
+            <div className="d-flex justify-content-center">
+              <button type="submit" className="btn btn-primary m-3" onClick={this.joinGame}>Join Game</button>
+            </div>
+          </form>
         </div>);
         break;
         // Copy link
@@ -288,7 +289,7 @@ class Lobby extends React.Component {
             <br/>
             {settingsBlock}
             <br/>
-            <button type="button" className="btn btn-primary mr-3" onClick={this.copyLink}>Copy Link</button>
+            <button type="button" className="btn btn-primary ml-1 mr-3" onClick={this.copyLink}>Copy Link</button>
             {
               this.state.roomOwner &&
               <button type="button" className="btn btn-success" onClick={this.startGame} disabled={this.state.players.length < 3}>Start Game</button>
