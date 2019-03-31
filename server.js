@@ -30,6 +30,7 @@ const userScheme = new mongoose.Schema({
   pendingRequests: { type: [mongoose.Schema.Types.ObjectId], default: [] },
 });
 
+const MINIMUM_CARDS_PER_DECK = 60;
 const deckScheme = new mongoose.Schema({
   name: String,
   type: { type: String, enum: ['WHITE', 'BLACK'] },
@@ -79,6 +80,9 @@ app.post('/api/deck/', isAuthenticated, function(req, res) {
   // removing duplicates
   let deckContentUnique = new Set(deckContent);
   deckContent = Array.from(deckContentUnique);
+  if (deckContent.length < MINIMUM_CARDS_PER_DECK) {
+    return res.send(400, { error: "Not enough unique cards in deck, must have at least " + MINIMUM_CARDS_PER_DECK });
+  }
   let deckName = sanitize(req.body.name);
   let deckType = sanitize(req.body.type);
   let newDeck = new Deck({name: deckName, type: deckType, cards: deckContent, ownerId: req.session.id});
@@ -298,6 +302,9 @@ app.put('/api/deck/:id/', function(req, res) {
   // removing duplicates
   let contentUnique = new Set(content);
   content = Array.from(contentUnique);
+  if (content.length < MINIMUM_CARDS_PER_DECK) {
+    return res.send(400, { error: "Not enough unique cards in deck, must have at least " + MINIMUM_CARDS_PER_DECK });
+  }
   let deckName = sanitize(req.body.name);
   let deckType = sanitize(req.body.type);
   let update = {name: deckName, type: deckType, cards: content};
