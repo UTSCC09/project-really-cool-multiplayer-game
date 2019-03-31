@@ -20,7 +20,6 @@ class ChatWindow extends React.Component {
     if (message !== '') {
       console.log(`sending message: ${message}`)
       this.socket.emit('chat message', message);
-      this.socket.emit('chat message', {"dangerouslySetInnerHTML" : { "__html": "<img src=x/ onerror=’alert(localStorage.access_token)’>"}})
     }
   }
 
