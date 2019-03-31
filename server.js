@@ -34,6 +34,8 @@ const instructionScheme = new mongoose.Schema({
 });
 
 const deckScheme = new mongoose.Schema({
+  name: String,
+  type: String,
   ownerId: mongoose.Schema.Types.ObjectId,
   cards: [String],
 });
@@ -86,7 +88,7 @@ app.post('/api/deck/', isAuthenticated, function(req, res) {
   let deckContent = req.body.content;
   let deckName = req.body.name;
   let deckType = req.body.type;
-  let newDeck = new Deck({name: deckName, type: deckType, content: deckContent, ownerId: req.session.userId});
+  let newDeck = new Deck({name: deckName, type: deckType, cards: deckContent, ownerId: req.session.id});
   newDeck.save(function(err, newDeck) {
     if (err) return res.send(500, {error: err});
   });
@@ -286,8 +288,9 @@ app.get('/api/games/:id/', function(req, res) {
 });
 
 // get decks belonging to your current user
-app.get('/api/user/myDecks', isAuthenticated,  function(req, res) {
-  Deck.find({ownerId:req.session.userId}, function(err, cards) {
+app.get('/api/user/:id/decks/',  function(req, res) {
+  let id = req.params.id;
+  Deck.find({ownerId:id}, function(err, cards) {
     if (err) return res.send(500, {error: err});
     else return res.json(cards);
   });
@@ -361,7 +364,7 @@ app.put('/api/deck/:id/', function(req, res) {
   let content = req.body.content;
   let deckName = req.body.name;
   let deckType = req.body.type;
-  let update = {name: deckName, type: deckType, content: content};
+  let update = {name: deckName, type: deckType, cards: content};
   Deck.findByIdAndUpdate(id, update, function(err, deck) {
     if (err) return res.send(500, { error: err });
     else if (deck === null) return res.send(404, {error: "Deck does not exist"});
