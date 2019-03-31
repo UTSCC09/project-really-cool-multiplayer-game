@@ -10,7 +10,7 @@ class App extends Component {
 
     return (
       <BrowserRouter>
-        <div>
+        <div className="h-100 w-100">
           <Route exact path="/" component={Home} />
           <Route path="/lobby" component={Lobby} />
           <Route exact path="/gameTest" component={Game} />

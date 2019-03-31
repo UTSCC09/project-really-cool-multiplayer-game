@@ -237,6 +237,21 @@ app.get('/api/user/:id/decks/',  function(req, res) {
   });
 });
 
+app.get('/api/lobby/:id/status', function(req, res) {
+  let lobby = games[req.params.id];
+  if (!lobby) {
+    res.status(404).end();
+  } else {
+    let message
+    if (lobby.phase !== 'lobby') {
+      message = 'game is already in progress';
+    } else if (lobby.numPlayers >= 8) {
+      message = 'game lobby is full';
+    }
+    res.status(200).send(message);
+  }
+});
+
 // UPDATE
 app.put('/api/user/:id/friend/', function(req, res) {
   let recipientId = sanitize(req.params.id);
@@ -346,6 +361,7 @@ let games = {};
 app.get('/api/create-room/', (req, res) => {
     let roomId = crypto.randomBytes(5).toString('hex');
     console.log(`new room ${roomId}`)
+    games[roomId] = {numPlayers: 0, phase: "lobby"};
     let currentGame = { public: {}, players: [] };
 
     function updateClientState(eventName) {
@@ -358,27 +374,41 @@ app.get('/api/create-room/', (req, res) => {
     lobby.on('connection', (socket) => {
       console.log("person connected")
 
-      if (currentGame.players.length >= 8) {
-        // room is full
-        socket.emit('room full');
-        socket.disconnect()
-      }
-
       socket.on('join', (username, callback) => {
+        if (games[roomId].numPlayers < 8) {
+          games[roomId].numPlayers++;
+        } else {
+          socket.disconnect();
+        }
         console.log(`${username} joined ${roomId}`)
-        // TODO:  change function if they're joining mid-game
         console.log(`${username}: ${socket.id}`)
+        if (currentGame.players.length === 0) {
+          socket.on('start game', startGame);
+        }
         currentGame.players.push({username, socketId: socket.id});
         if (callback) {
           callback(socket.id);
         }
+        socket.on('chat message', (message) => {
+          // convert to string because while react deals with xss on its own, if it's passed an object it'll mess things up
+          lobby.emit('chat message', {user: username, content: String(message)});
+        });
         lobby.emit('player list', currentGame.players);
       });
 
-      socket.once('start game', startGame);
       async function startGame(settings) {
+        // not enough people to start game
+        if (currentGame.players.length < 3) {
+          return;
+        }
+        // remove start game listener so can't start game multiple times
+        lobby.connected[currentGame.players[0].socketId].removeAllListeners('start game');
+        // remove connection listener so new people can't join a room in progress
+        lobby.removeAllListeners('connection');
+        games[roomId].phase = "playing";
         console.log("Game Settings:", settings);
         for (let socketId in lobby.connected) {
+          // remove disconnect event for when in lobby
           lobby.connected[socketId].removeAllListeners('disconnect');
         }
         console.log(`start game: ${roomId}`);
@@ -431,8 +461,6 @@ app.get('/api/create-room/', (req, res) => {
 
         shuffle(whiteDeck)
         shuffle(blackDeck)
-
-        //TODO shuffle decks`
 
         let initialCards = 7;
         currentGame.public.players = currentGame.players.map((player) => {
@@ -488,25 +516,32 @@ app.get('/api/create-room/', (req, res) => {
           updateClientState('black card');
           for (let player of currentGame.players) {
             if (player.socketId !== currentGame.public.cardCsar) {
-              lobby.connected[player.socketId].once('white card submit',(submittedCard) => {
+              let submitCard = (submittedCard) => {
                 console.log(`${submittedCard.owner} selected ${submittedCard.content}`)
                 whiteDiscards.push(submittedCard.content);
                 // TODO: cards should have ids instead of filtering on content
                 let currPlayer = currentGame.players.find((player) => {
                   return submittedCard.owner === player.socketId;
                 });
-                currPlayer.cards = currPlayer.cards.filter((card) => {
-                  return card.content !== submittedCard.content;
+                let idx = currPlayer.cards.findIndex((card) => {
+                  return card.content === submittedCard.content;
                 });
+                if (idx === -1) {
+                  // the card wasn't a card in the player's hand. i.e. cheating
+                  lobby.connected[player.socketId].once('white card submit', submitCard);
+                  return;
+                }
+                currPlayer.cards.splice(idx, 1);
                 //put the white card in the private array
                 currentGame.private.whiteCards.push(submittedCard);
                 // display empty white card to everyone
-                currentGame.public.whiteCards.push({content: '', owner: submittedCard.owner});
+                currentGame.public.whiteCards.push({ content: '', owner: submittedCard.owner });
                 updateClientState('game state update');
                 if (currentGame.private.whiteCards.length === currentGame.players.length - 1) {
                   judgingPhase();
                 }
-              });
+              }
+              lobby.connected[player.socketId].once('white card submit', submitCard);
             }
           }
         }
@@ -527,6 +562,7 @@ app.get('/api/create-room/', (req, res) => {
             let idx = currentGame.public.players.findIndex((player) => {
               return player.socketId === winner;
             });
+            console.log(idx);
             currentGame.public.players[idx].score++;
             // check if the game is over
             if (currentGame.public.players[idx].score === currentGame.public.settings.winningScore) {
@@ -562,8 +598,8 @@ app.get('/api/create-room/', (req, res) => {
               selectingPhase();
             } else {
               console.log('non card csar left remove their option')
-              currentGame.public.whiteCards = currentGame.public.whiteCards.filter((card) => {
-                return card.owner === socketId;
+              currentGame.public.whiteCards = currentGame.public.whiteCards.filter((card) => {                
+                return card.owner !== socketId;
               });
               updateClientState('game state update');
             }
@@ -630,6 +666,7 @@ app.get('/api/create-room/', (req, res) => {
           // person was room host
           lobby.connected[currentGame.players[0].socketId].on('start game', startGame);
         }
+        games[roomId].numPlayers--;
         lobby.emit('player list', currentGame.players);
       }
 
