@@ -101,7 +101,7 @@ class User extends React.Component {
       this.setState({decks: decks});
     }).catch(err => console.log("err fetching friends", err));
   }
-  
+
   friendRequestResponse(type, id) {
     let token = document.cookie.match('(^|;) ?' + 'token' + '=([^;]*)(;|$)');
     token = token ? token[2] : null;
@@ -137,7 +137,7 @@ class User extends React.Component {
     if (user && user._id) {
       window.location.href = '/user/' + user._id + '/';
     }
-  }  
+  }
   setAddDeckState(bool, deckListIndex) {
     let res = {};
     if (this.state.newDeckToggle !== bool) {
@@ -238,7 +238,7 @@ class User extends React.Component {
       if (!(this.state.friends.find((user) => {return user._id === clientUserId})) && clientUserId && !clientPage) {
         friendButton = (<button type="button" className="btn btn-primary m-1" onClick={() => {this.friendRequestResponse("SEND")}}> Add Friend </button>)
       }
-      friendsInfo = (this.state.friends.indexOf(clientUserId) !== 0 && this.state.friends) ? this.state.friends.map((user) => {
+      friendsInfo = (this.state.friends && this.state.friends.length !== 0) ? this.state.friends.map((user) => {
         return (
           <div className="w-50">
             <li className="list-group-item ml-3">
@@ -360,6 +360,8 @@ class User extends React.Component {
       <div>
         <h1> <a href={url} className="text-dark"> Shuffle With Friends </a> </h1>
         {userInfo}
+        <br/>
+        <h3> Custom Decks: </h3>
         <div className="px-5 py-2">
           <span className='container' id='deck-form-container'>
             {deckForm}
