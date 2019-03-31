@@ -54,7 +54,7 @@ var Game = mongoose.model('Game', gameScheme);
 mongoose.connect(process.env.MONGODB_URI || "mongodb://test:test123@ds213896.mlab.com:13896/heroku_nz567lg6", { useNewUrlParser: true });
 let db = mongoose.connection;
 
-console.log("DB running on: " + process.env.MONGODB_URI || "mongodb://test:test123@ds213896.mlab.com:13896/heroku_nz567lg6");
+console.log("DB running on: " + (process.env.MONGODB_URI || "mongodb://test:test123@ds213896.mlab.com:13896/heroku_nz567lg6"));
 
 db.once("open", () => console.log("connected to the database"));
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
@@ -511,11 +511,8 @@ app.get('/api/create-room/', (req, res) => {
           cardCsarIdx: currentGame.players.length - 1
         }
 
-        // TODO change these to ids received from settings
-        let whiteDeck = await Deck.findById(whiteDeckId).cards;
-        let blackDeck = await Deck.findById(blackDeckId).cards;
-        // let whiteDeck = game.decks.get('whiteDeck').cards;
-        // let blackDeck = game.decks.get('blackDeck').cards;
+        let whiteDeck = (await Deck.findById(whiteDeckId)).cards;
+        let blackDeck = (await Deck.findById(blackDeckId)).cards;
 
         // https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
         function shuffle(a) {

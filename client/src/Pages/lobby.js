@@ -102,7 +102,7 @@ class Lobby extends React.Component {
 
   render() {
     let players = this.state.players.map((player) => {
-      let displayKick = this.state.roomOwner && player.socketId === this.state.players[0].socketId
+      let displayKick = this.state.roomOwner && player.socketId !== this.state.players[0].socketId
       let username = player.username;
       return (
           <div className="w-75" >
