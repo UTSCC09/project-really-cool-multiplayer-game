@@ -80,7 +80,7 @@ app.post('/api/deck/', isAuthenticated, function(req, res) {
   let deckContent = sanitize(req.body.content);
   let deckName = sanitize(req.body.name);
   let deckType = sanitize(req.body.type);
-  if (deckType !== "WHITE" && deckType !== "BLACK") return res.status(400).send({"Deck type must be either WHITE or BLACK"})
+  if (deckType !== "WHITE" && deckType !== "BLACK") return res.status(400).send({error: "Deck type must be either WHITE or BLACK"})
   let deckContentUnique = new Set(deckContent);
   deckContent = Array.from(deckContentUnique);
   let min = (deckType === "WHITE" ? MINIMUM_CARDS_WHITE : MINIMUM_CARDS_BLACK)
@@ -304,7 +304,7 @@ app.put('/api/deck/:id/', function(req, res) {
   let deckContent = sanitize(req.body.content);
   let deckName = sanitize(req.body.name);
   let deckType = sanitize(req.body.type);
-  if (deckType !== "WHITE" && deckType !== "BLACK") return res.status(400).send({"Deck type must be either WHITE or BLACK"})
+  if (deckType !== "WHITE" && deckType !== "BLACK") return res.status(400).send({error: "Deck type must be either WHITE or BLACK"})
   let deckContentUnique = new Set(deckContent);
   deckContent = Array.from(deckContentUnique);
   let min = (deckType === "WHITE" ? MINIMUM_CARDS_WHITE : MINIMUM_CARDS_BLACK)
