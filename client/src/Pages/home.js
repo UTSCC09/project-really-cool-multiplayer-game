@@ -61,7 +61,7 @@ class Home extends React.Component {
       window.location.href = '/user/' + this.state.clientUserId + '/';
     }
   }
-
+  
   render() {
     let userPane = this.state.user ? (
       <div className="d-flex flex-column justify-content-start align-items-start p-2">
@@ -79,8 +79,8 @@ class Home extends React.Component {
       </div>
     );
 
-
     return(
+      <div>
         <div id="main-container" className="d-flex justify-content-between">
           {userPane}
           <div className="d-flex flex-column justify-content-center align-items-center p-2">
@@ -100,6 +100,11 @@ class Home extends React.Component {
             {userPane}
           </div>
         </div>
+        <div className="px-5 py-2">
+          <span className='container' id='deck-form-container'>
+          </span>
+        </div>
+      </div>
     )
   }
 }

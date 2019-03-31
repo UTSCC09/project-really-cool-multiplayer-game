@@ -86,7 +86,9 @@ app.use(function(req, res, next) {
 // CREATE
 app.post('/api/deck/', isAuthenticated, function(req, res) {
   let deckContent = req.body.content;
-  let newDeck = new Deck({content: deckContent, ownerId: req.session.userId});
+  let deckName = req.body.name;
+  let deckType = req.body.type;
+  let newDeck = new Deck({name: deckName, type: deckType, cards: deckContent, ownerId: req.session.id});
   newDeck.save(function(err, newDeck) {
     if (err) return res.send(500, {error: err});
   });
@@ -293,6 +295,15 @@ app.get('/api/games/:id/', function(req, res) {
   });
 });
 
+// get decks belonging to your current user
+app.get('/api/user/:id/decks/',  function(req, res) {
+  let id = req.params.id;
+  Deck.find({ownerId:id}, function(err, cards) {
+    if (err) return res.send(500, {error: err});
+    else return res.json(cards);
+  });
+});
+
 // UPDATE
 app.put('/api/user/:id/friend/', function(req, res) {
   console.log("heres the body", req.body);
@@ -359,7 +370,9 @@ app.put('/api/user/:id/friend/', function(req, res) {
 app.put('/api/deck/:id/', function(req, res) {
   let id = req.params.id;
   let content = req.body.content;
-  let update = {content: content}
+  let deckName = req.body.name;
+  let deckType = req.body.type;
+  let update = {name: deckName, type: deckType, cards: content};
   Deck.findByIdAndUpdate(id, update, function(err, deck) {
     if (err) return res.send(500, { error: err });
     else if (deck === null) return res.send(404, {error: "Deck does not exist"});
