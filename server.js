@@ -53,7 +53,7 @@ db.on("error", console.error.bind(console, "MongoDB connection error:"));
 const PORT = process.env.PORT || 5000;
 const router = express.Router();
 var isAuthenticated = function(req, res, next) {
-  if (!req.session.token) return res.send(401, {error: "Access denied"});
+  if (!req.session.token) return res.status(401).send({error: "Access denied"});
   next();
 };
 
@@ -81,13 +81,13 @@ app.post('/api/deck/', isAuthenticated, function(req, res) {
   let deckContentUnique = new Set(deckContent);
   deckContent = Array.from(deckContentUnique);
   if (deckContent.length < MINIMUM_CARDS_PER_DECK) {
-    return res.send(400, { error: "Not enough unique cards in deck, must have at least " + MINIMUM_CARDS_PER_DECK });
+    return res.status(400).send({ error: "Not enough unique cards in deck, must have at least " + MINIMUM_CARDS_PER_DECK });
   }
   let deckName = sanitize(req.body.name);
   let deckType = sanitize(req.body.type);
   let newDeck = new Deck({name: deckName, type: deckType, cards: deckContent, ownerId: req.session.id});
   newDeck.save(function(err, newDeck) {
-    if (err) return res.send(500, {error: err});
+    if (err) return res.status(500).send({error: err});
   });
   return res.json(newDeck._id);
 });
@@ -122,7 +122,7 @@ app.get('/auth/google/callback/', passport.authenticate('google', {failureRedire
   }
   let option = {new: true, upsert: true, setDefaultOnInsert: true};
   User.findOneAndUpdate({googleId: req.user.profile.id}, update, option).exec(function(err, user) {
-    if (err) return res.send(500, { error: err });
+    if (err) return res.status(500).send({ error: err });
     req.session.id = user._id;
     res.redirect('/');
   });
@@ -132,7 +132,7 @@ app.get('/logout/', function (req, res) {
     req.logout();
     let update = {token: ""}
     User.findOneAndUpdate({token: req.session.token}, update, function(err, user) {
-      if (err) return res.send(500, { error: err });
+      if (err) return res.status(500).send({ error: err });
     })
     req.session = null;
     res.redirect('/');
@@ -141,8 +141,8 @@ app.get('/logout/', function (req, res) {
 app.get('/api/deck/:id/', function(req, res) {
   let id = sanitize(req.params.id);
   Deck.findById(id, function(err, deck) {
-    if (err) return res.send(500, {error : err});
-    else if (user === null) return res.send(404, {error: 'Deck not found'});
+    if (err) return res.status(500).send({error : err});
+    else if (user === null) return res.status(404).send({error: 'Deck not found'});
     else return res.json(deck);
   });
 });
@@ -150,8 +150,8 @@ app.get('/api/deck/:id/', function(req, res) {
 app.get('/api/user/:id/', function(req, res) {
   let id = sanitize(req.params.id);
   User.findById(id, function(err, user) {
-    if (err) return res.send(500, {error : err});
-    else if (user === null) return res.send(404, {error: 'User not found'});
+    if (err) return res.status(500).send({error : err});
+    else if (user === null) return res.status(404).send({error: 'User not found'});
     else {
       // Check for token in header
       let token = req.get('token');
@@ -173,12 +173,12 @@ app.get('/api/user/:id/', function(req, res) {
 app.get('/api/user/:id/friend/', function(req, res) {
   let id = sanitize(req.params.id);
   User.findById(id, 'friends', function(err, user) {
-    if (err) return res.send(500, {error: err});
-    else if (user === null) return res.send(404, {error: 'User not found'});
+    if (err) return res.status(500).send({error: err});
+    else if (user === null) return res.status(404).send({error: 'User not found'});
     else if (user.friends.length === 0) return res.json([]);
     else {
       User.find({ '_id': { $in: user.friends } }, "friends photo givenName familyName", function(err, users) {
-        if (err) return res.send(500, {error: err});
+        if (err) return res.status(500).send({error: err});
         else if (users === null) return res.json([]);
         else return res.json(users);
       });
@@ -191,9 +191,9 @@ app.get('/api/user/:id/friend/requests/', function(req, res) {
   let token = req.get('token');
   let type = req.query.type; // "incoming" || "pending"
   if (!token) {
-    return res.send(401, {error: "No auth token"});
+    return res.status(401).send({error: "No auth token"});
   } else if (type !== "incoming" && type !== "pending") {
-    return res.send(400, {error: "Incorrect request type: '"+ type + "'. Must be either 'incoming' or 'pending'."})
+    return res.status(400).send({error: "Incorrect request type: '"+ type + "'. Must be either 'incoming' or 'pending'."})
   }
   let field;
   switch(type) {
@@ -203,13 +203,13 @@ app.get('/api/user/:id/friend/requests/', function(req, res) {
   }
 
   User.findById(id, field + " token", function(err, user) {
-    if (err) return res.send(500, {error: err});
-    else if (user === null) return res.send(404, {error: 'User not found'});
-    else if (user.token !== token) return res.send(401, {error: 'User not authorized'});
+    if (err) return res.status(500).send({error: err});
+    else if (user === null) return res.status(404).send({error: 'User not found'});
+    else if (user.token !== token) return res.status(401).send({error: 'User not authorized'});
     else if (user[field].length === 0) return res.json([]);
     else {
       User.find({ '_id': { $in: user[field] } }, "friends photo givenName familyName", function(err, users) {
-        if (err) return res.send(500, {error: err});
+        if (err) return res.status(500).send({error: err});
         else if (users === null) return res.json([]);
         else return res.json(users);
       });
@@ -220,7 +220,7 @@ app.get('/api/user/:id/friend/requests/', function(req, res) {
 app.get('/api/user/:id/decks/', function(req, res) {
   let id = sanitize(req.params.id);
   Deck.find({ownerId:id}, function(err, decks) {
-    if (err) return res.send(500, {error: err});
+    if (err) return res.status(500).send({error: err});
     else return res.json(decks);
   });
 });
@@ -229,7 +229,7 @@ app.get('/api/user/:id/decks/', function(req, res) {
 app.get('/api/user/:id/decks/',  function(req, res) {
   let id = sanitize(req.params.id);
   Deck.find({ownerId:id}, function(err, cards) {
-    if (err) return res.send(500, {error: err});
+    if (err) return res.status(500).send({error: err});
     else return res.json(cards);
   });
 });
@@ -242,23 +242,23 @@ app.put('/api/user/:id/friend/', function(req, res) {
   let token = req.get('token');
 
   if (requestType !== "SEND" && requestType !== "ACCEPT" && requestType !== "DECLINE") {
-    return res.send(400, {error: "Incorrect request type: '"+ requestType + "'. Must be either 'SEND', 'ACCEPT', or 'DECLINE'."});
+    return res.status(400).send({error: "Incorrect request type: '"+ requestType + "'. Must be either 'SEND', 'ACCEPT', or 'DECLINE'."});
   } else if (!token) {
-    return res.send(401, {error: "No auth token"});
+    return res.status(401).send({error: "No auth token"});
   } else if (senderId === recipientId) {
-    return res.send(400, {error: "Identical Ids"});
+    return res.status(400).send({error: "Identical Ids"});
   }
 
   // sender -> guy doing a thing on the client (sending the request, accepting the request or declining the request)
   // recipient -> the other one
   User.findById(senderId, function(err, sender) {
-    if (err) return res.send(500, {error: err});
-    else if (sender === null) return res.send(404, {error: "Sending user:" + senderId + " not found"});
+    if (err) return res.status(500).send({error: err});
+    else if (sender === null) return res.status(404).send({error: "Sending user:" + senderId + " not found"});
     else {
-      if (!sender.token || sender.token !== token) return res.send(401, {error: "User not authorized"});
+      if (!sender.token || sender.token !== token) return res.status(401).send({error: "User not authorized"});
       User.findById(recipientId, function(err, recipient) {
-        if (err) return res.send(500, {error: err});
-        else if (recipient === null) return res.send(404, {error: "Recipient user:" + recipientId + " not found"});
+        if (err) return res.status(500).send({error: err});
+        else if (recipient === null) return res.status(404).send({error: "Recipient user:" + recipientId + " not found"});
         else {
           let senderUpdate = {}
           let recipientUpdate = {}
@@ -270,7 +270,7 @@ app.put('/api/user/:id/friend/', function(req, res) {
             // check if there was a friend request from recipient to sender already
             // if not, send error
             if (!(sender.incomingRequests.indexOf(recipientId) !== -1) || !(recipient.pendingRequests.includes(senderId + "") !== -1)) {
-              return res.send(400, {error: "User: " + recipientId + " has not sent a request to user: " + senderId});
+              return res.status(400).send({error: "User: " + recipientId + " has not sent a request to user: " + senderId});
             }
 
             senderUpdate = { $pull: { incomingRequests: recipientId } };
@@ -283,10 +283,10 @@ app.put('/api/user/:id/friend/', function(req, res) {
           }
 
           User.updateOne({_id: recipientId}, recipientUpdate, function(err, raw) {
-            if (err) return res.send(500, {error: err});
+            if (err) return res.status(500).send({error: err});
           });
           User.updateOne({_id: senderId}, senderUpdate, function(err, raw) {
-            if (err) return res.send(500, {error: err});
+            if (err) return res.status(500).send({error: err});
           });
           res.json({});
         }
@@ -303,14 +303,14 @@ app.put('/api/deck/:id/', function(req, res) {
   let contentUnique = new Set(content);
   content = Array.from(contentUnique);
   if (content.length < MINIMUM_CARDS_PER_DECK) {
-    return res.send(400, { error: "Not enough unique cards in deck, must have at least " + MINIMUM_CARDS_PER_DECK });
+    return res.status(400).send({ error: "Not enough unique cards in deck, must have at least " + MINIMUM_CARDS_PER_DECK });
   }
   let deckName = sanitize(req.body.name);
   let deckType = sanitize(req.body.type);
   let update = {name: deckName, type: deckType, cards: content};
   Deck.findByIdAndUpdate(id, update, function(err, deck) {
-    if (err) return res.send(500, { error: err });
-    else if (deck === null) return res.send(404, {error: "Deck does not exist"});
+    if (err) return res.status(500).send({ error: err });
+    else if (deck === null) return res.status(404).send({error: "Deck does not exist"});
     else return res.json(deck);
   });
 });
@@ -319,8 +319,8 @@ app.put('/api/deck/:id/', function(req, res) {
 app.delete('/api/deck/:id/', function(req, res) {
   let id = sanitize(req.params.id);
   Deck.findByIdAndDelete(id, function(err, deck) {
-    if (err) return res.send(500, { error: err });
-    else if (deck === null) return res.send(404, {error: "Deck does not exist"});
+    if (err) return res.status(500).send({ error: err });
+    else if (deck === null) return res.status(404).send({error: "Deck does not exist"});
     else return res.json(deck);
   });
 });
@@ -328,8 +328,8 @@ app.delete('/api/deck/:id/', function(req, res) {
 app.delete('/api/user/:id/', function(req, res) {
   let id = sanitize(req.params.id);
   User.findByIdAndDelete(id, function(err, user) {
-    if (err) return res.send(500, { error: err });
-    else if (user === null) return res.send(404, {error: "User does not exist"});
+    if (err) return res.status(500).send({ error: err });
+    else if (user === null) return res.status(404).send({error: "User does not exist"});
     else return res.json(user);
   });
 });
