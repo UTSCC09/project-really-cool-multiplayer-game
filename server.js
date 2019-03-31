@@ -587,6 +587,9 @@ app.get('/api/create-room/', (req, res) => {
             if (currentGame.public.players[idx].score === currentGame.public.settings.winningScore) {
               currentGame.public.winner = currentGame.public.players[idx].socketId;
               updateClientState('game over');
+              for (let socketId in lobby.connected) {
+                lobby.connected[socketId].removeAllListeners('disconnect');
+              }
               return; //TODO play againstuff here
             }
             selectingPhase();
