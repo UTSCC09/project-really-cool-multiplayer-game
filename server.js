@@ -4,6 +4,7 @@
 require("dotenv").config();
 
 const mongoose = require('mongoose');
+const sanitizer = require('mongo-sanitize');
 const express = require('express');
 const app = express();
 const server = require('http').createServer(app);
@@ -29,10 +30,6 @@ const userScheme = new mongoose.Schema({
   pendingRequests: { type: [mongoose.Schema.Types.ObjectId], default: [] },
 });
 
-const instructionScheme = new mongoose.Schema({
-  content: String
-});
-
 const deckScheme = new mongoose.Schema({
   name: String,
   type: { type: String, enum: ['WHITE', 'BLACK'] },
@@ -40,15 +37,8 @@ const deckScheme = new mongoose.Schema({
   cards: [String],
 });
 
-const gameScheme = new mongoose.Schema({
-  name: String,
-  decks: {type: Map, of: deckScheme}
-});
-
 var User = mongoose.model('User', userScheme);
-var Instruction = mongoose.model('Instruction', instructionScheme);
 var Deck = mongoose.model('Deck', deckScheme);
-var Game = mongoose.model('Game', gameScheme);
 
 
 mongoose.connect(process.env.MONGODB_URI || "mongodb://test:test123@ds213896.mlab.com:13896/heroku_nz567lg6", { useNewUrlParser: true });
@@ -85,9 +75,9 @@ app.use(function(req, res, next) {
 // SERVER ROUTES
 // CREATE
 app.post('/api/deck/', isAuthenticated, function(req, res) {
-  let deckContent = req.body.content;
-  let deckName = req.body.name;
-  let deckType = req.body.type;
+  let deckContent = sanitize(req.body.content);
+  let deckName = sanitize(req.body.name);
+  let deckType = sanitize(req.body.type);
   let newDeck = new Deck({name: deckName, type: deckType, cards: deckContent, ownerId: req.session.id});
   newDeck.save(function(err, newDeck) {
     if (err) return res.send(500, {error: err});
@@ -98,47 +88,8 @@ app.post('/api/deck/', isAuthenticated, function(req, res) {
 var multer  = require('multer')
 var upload = multer();
 
-app.post('/api/file/', upload.single('file'), function(req, res) {
-  // console.log("asdfasdfasd", req.file);
-  let buffer = req.file.buffer;
-  let cardContent = buffer.toString('utf8').split('\n');
-  // Set This in the card database;
-  // // Make a thing and put it in the database
-  // let d1 = new Deck({ownerId: "5c8a02a89f0f3cbb9a5b75f6", cards: cardContent}); // 5c8dc7c0b6aa482b6f8ac885
-  // let d2 = new Deck({ownerId: "5c8a02a89f0f3cbb9a5b75f6", cards: cardContent}); // 5c8dc89d47e8042ba5673c20
-  // d2.save(function(err, d) {
-  //   if (err) console.log("d2 didnt save help");
-  //   Deck.findById('5c8dc7c0b6aa482b6f8ac885', function(err, black) {
-  //     if (!black) {
-  //
-  //
-  //
-  //
-  //     } else {
-  //       console.log("HELP");
-  //     }
-  //   });
-  // });
-
-
-
-  // console.log(req.file.buffer);
-  res.json(cardContent);
-});
-
 // READ
 app.get('/', function (req, res, next) {
-  // if (req.session.token) {
-  //   res.cookie('token', req.session.token);
-  // } else {
-  //   res.cookie('token', '');
-  // }
-  //
-  // if (req.session.id) {
-  //   res.cookie('id', req.session.id)
-  // } else {
-  //   res.cookie('id', '');
-  // }
   res.cookie('token', req.session.token || '');
   res.cookie('id', req.session.id || '');
   next();
@@ -159,8 +110,8 @@ app.get('/auth/google/callback/', passport.authenticate('google', {failureRedire
     email: req.user.profile.emails[0].value,
     photo: req.user.profile.photos[0].value,
     googleId: req.user.profile.id,
-    givenName: req.user.profile.name.givenName,
-    familyName: req.user.profile.name.familyName,
+    givenName: sanitize(req.user.profile.name.givenName),
+    familyName: sanitize(req.user.profile.name.familyName),
   }
   let option = {new: true, upsert: true, setDefaultOnInsert: true};
   User.findOneAndUpdate({googleId: req.user.profile.id}, update, option).exec(function(err, user) {
@@ -181,7 +132,7 @@ app.get('/logout/', function (req, res) {
 });
 
 app.get('/api/deck/:id/', function(req, res) {
-  let id = req.params.id;
+  let id = sanitize(req.params.id);
   Deck.findById(id, function(err, deck) {
     if (err) return res.send(500, {error : err});
     else if (user === null) return res.send(404, {error: 'Deck not found'});
@@ -190,7 +141,7 @@ app.get('/api/deck/:id/', function(req, res) {
 });
 
 app.get('/api/user/:id/', function(req, res) {
-  let id = req.params.id;
+  let id = sanitize(req.params.id);
   User.findById(id, function(err, user) {
     if (err) return res.send(500, {error : err});
     else if (user === null) return res.send(404, {error: 'User not found'});
@@ -213,7 +164,7 @@ app.get('/api/user/:id/', function(req, res) {
 });
 
 app.get('/api/user/:id/friend/', function(req, res) {
-  let id = req.params.id;
+  let id = sanitize(req.params.id);
   User.findById(id, 'friends', function(err, user) {
     if (err) return res.send(500, {error: err});
     else if (user === null) return res.send(404, {error: 'User not found'});
@@ -229,7 +180,7 @@ app.get('/api/user/:id/friend/', function(req, res) {
 });
 
 app.get('/api/user/:id/friend/requests/', function(req, res) {
-  let id = req.params.id;
+  let id = sanitize(req.params.id);
   let token = req.get('token');
   let type = req.query.type; // "incoming" || "pending"
   if (!token) {
@@ -260,44 +211,16 @@ app.get('/api/user/:id/friend/requests/', function(req, res) {
 });
 
 app.get('/api/user/:id/decks/', function(req, res) {
-  let id = req.params.id;
+  let id = sanitize(req.params.id);
   Deck.find({ownerId:id}, function(err, decks) {
     if (err) return res.send(500, {error: err});
     else return res.json(decks);
   });
 });
 
-
-// DEPRECATED use GET /api/user/:id/ with token in header
-app.get('/api/user/token/:token/', function(req, res) {
-  let token = req.params.token;
-  User.findOne({token: token}, function(err, user) {
-    if (err) return res.send(500, {error : err});
-    else if (user === null) return res.send(404, {error: 'User not found'});
-    else return res.json(user);
-  });
-});
-
-app.get('/api/games/list/', function(req, res) {
-  Game.find({}, function(err, games) {
-    if (err) return res.send(500, {error: err});
-    else if (games.length === 0) return res.send(404, {error: 'No games found'});
-    else return res.json(games);
-  });
-});
-
-app.get('/api/games/:id/', function(req, res) {
-  let id = req.params.id;
-  Game.findById(id, function(err, game) {
-    if (err) return res.send(500, {error: err});
-    else if (game === null) return res.send(404, {error: 'Game not found'});
-    else return res.json(game);
-  });
-});
-
 // get decks belonging to your current user
 app.get('/api/user/:id/decks/',  function(req, res) {
-  let id = req.params.id;
+  let id = sanitize(req.params.id);
   Deck.find({ownerId:id}, function(err, cards) {
     if (err) return res.send(500, {error: err});
     else return res.json(cards);
@@ -306,9 +229,8 @@ app.get('/api/user/:id/decks/',  function(req, res) {
 
 // UPDATE
 app.put('/api/user/:id/friend/', function(req, res) {
-  console.log("heres the body", req.body);
-  let recipientId = req.params.id;
-  let senderId = req.body.id;
+  let recipientId = sanitize(req.params.id);
+  let senderId = sanitize(req.body.id);
   let requestType = req.body.requestType; // "SEND || ACCEPT || DECLINE";
   let token = req.get('token');
 
@@ -368,10 +290,10 @@ app.put('/api/user/:id/friend/', function(req, res) {
 
 
 app.put('/api/deck/:id/', function(req, res) {
-  let id = req.params.id;
-  let content = req.body.content;
-  let deckName = req.body.name;
-  let deckType = req.body.type;
+  let id = sanitize(req.params.id);
+  let content = sanitize(req.body.content);
+  let deckName = sanitize(req.body.name);
+  let deckType = sanitize(req.body.type);
   let update = {name: deckName, type: deckType, cards: content};
   Deck.findByIdAndUpdate(id, update, function(err, deck) {
     if (err) return res.send(500, { error: err });
@@ -382,7 +304,7 @@ app.put('/api/deck/:id/', function(req, res) {
 
 // DELETE
 app.delete('/api/deck/:id/', function(req, res) {
-  let id = req.params.id;
+  let id = sanitize(req.params.id);
   Deck.findByIdAndDelete(id, function(err, deck) {
     if (err) return res.send(500, { error: err });
     else if (deck === null) return res.send(404, {error: "Deck does not exist"});
@@ -391,7 +313,7 @@ app.delete('/api/deck/:id/', function(req, res) {
 });
 
 app.delete('/api/user/:id/', function(req, res) {
-  let id = req.params.id;
+  let id = sanitize(req.params.id);
   User.findByIdAndDelete(id, function(err, user) {
     if (err) return res.send(500, { error: err });
     else if (user === null) return res.send(404, {error: "User does not exist"});
@@ -400,38 +322,6 @@ app.delete('/api/user/:id/', function(req, res) {
 });
 
 app.use(express.static(path.join(__dirname, "client", "build")));
-
-// // Make a thing and put it in the database
-// let d1 = new Deck({ownerId: "5c8a02a89f0f3cbb9a5b75f6", cards: ["test1-1", "test1-2", "test1-3"]});
-// let d2 = new Deck({ownerId: "5c8a02a89f0f3cbb9a5b75f6", cards: ["test2-1", "test2-2", "test2-3"]});
-// let g = new Game({name: "THEGAME", decks: {"deck1": d1, "deck2": d2}});
-// d1.save(function(err, d) {
-//   if (err) console.log("d1 didnt save help");
-// });
-// d2.save(function(err, d) {
-//   if (err) console.log("d2 didnt save help");
-// });
-// g.save(function(err, d) {
-//   if (err) console.log("g didnt save help");
-// });
-
-// Deck.findById('5c8dc7c0b6aa482b6f8ac885', function(err, bd) {
-//   if (!err && bd) {
-//     Deck.findById('5c8dc89d47e8042ba5673c20', function(err, wd) {
-//       if (!err && wd) {
-//         let g = new Game({name: "CAH", decks: {whiteDeck: wd, blackDeck: bd}});
-//         g.save(function(err, docs) {
-//           if (err) console.log("g save error");
-//         });
-//       } else console.log("wd error");
-//     });
-//   } else console.log("bd error");
-// });
-
-
-
-
-
 
 // contains arrays of the usernames of people in a lobby, indexed by lobby id
 let games = {};
@@ -485,8 +375,8 @@ app.get('/api/create-room/', (req, res) => {
         let gameId = "5c8dcad255c6482c14aa7326"; // settings.gameId
         let game = await Game.findById(gameId);
 
-        let whiteDeckId = settings.whiteDeckId;
-        let blackDeckId = settings.blackDeckId;
+        let whiteDeckId = sanitize(settings.whiteDeckId);
+        let blackDeckId = sanitize(settings.blackDeckId);
 
         if (!whiteDeckId || whiteDeckId === "default") {
           whiteDeckId = "5c8dc89d47e8042ba5673c20";
@@ -532,12 +422,6 @@ app.get('/api/create-room/', (req, res) => {
         currentGame.public.players = currentGame.players.map((player) => {
           return { username: player.username, socketId: player.socketId, score: 0 };
         });
-        //
-        // function updateClientState(eventName) {
-        //   for (player of currentGame.players) {
-        //     lobby.to(player.socketId).emit(eventName, {public: currentGame.public, private: player});
-        //   }
-        // }
 
         // Deal cards to each player
         // let csar = Math.floor(Math.random() * Math.floor(players.length));
