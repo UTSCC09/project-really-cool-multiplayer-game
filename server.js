@@ -513,6 +513,8 @@ app.get('/api/create-room/', (req, res) => {
 
         let whiteDeck = (await Deck.findById(whiteDeckId)).cards;
         let blackDeck = (await Deck.findById(blackDeckId)).cards;
+        let whiteDiscards = [];
+        let blackDiscards = [];
 
         // https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
         function shuffle(a) {
@@ -545,6 +547,12 @@ app.get('/api/create-room/', (req, res) => {
           player.cards = [];
           for (let i = 0; i < initialCards; i++) {
             player.cards.push({content: whiteDeck.shift(), owner: player.socketId});
+            if (whiteDeck.length === 0) {
+              whiteDeck = whiteDiscards;
+              shuffle(whiteDeck);
+              whiteDiscards = [];
+            }
+
           }
           lobby.to(player.socketId).emit('start game', {public: currentGame.public, private: player});
         }
@@ -571,12 +579,20 @@ app.get('/api/create-room/', (req, res) => {
           currentGame.private.cardCsarIdx = (currentGame.private.cardCsarIdx + 1) % currentGame.players.length;
           currentGame.public.cardCsar = currentGame.players[currentGame.private.cardCsarIdx].socketId
 
+          blackDiscards.push(currentGame.public.blackCard);
           currentGame.public.blackCard = blackDeck.shift();
+          if (blackDeck.length === 0) {
+            blackDeck = blackDiscards;
+            shuffle(blackDeck);
+            blackDiscards = [];
+          }
+
           updateClientState('black card');
           for (let player of currentGame.players) {
             if (player.socketId !== currentGame.public.cardCsar) {
               lobby.connected[player.socketId].once('white card submit',(submittedCard) => {
                 console.log(`${submittedCard.owner} selected ${submittedCard.content}`)
+                whiteDiscards.push(submittedCard.content);
                 // TODO: cards should have ids instead of filtering on content
                 let currPlayer = currentGame.players.find((player) => {
                   return submittedCard.owner === player.socketId;
@@ -632,6 +648,15 @@ app.get('/api/create-room/', (req, res) => {
             currentGame.public.players = currentGame.public.players.filter((player) => {
               return player.socketId !== socketId;
             });
+            let disconnectedPlayer = currentGame.players.find((player) => {
+              return player.socketId === socketId;
+            });
+            if (disconnectedPlayer) {
+              for (let card of disconnectedPlayer.cards) {
+                whiteDiscards.push(card.content);
+              }
+            }
+
             if (socketId === currentGame.public.cardCsar) {
               console.log('card csar left during judging new round')
               // reduce by one to account new person taking their index spot
@@ -655,6 +680,15 @@ app.get('/api/create-room/', (req, res) => {
             currentGame.public.players = currentGame.public.players.filter((player) => {
               return player.socketId !== socketId;
             });
+            let disconnectedPlayer = currentGame.players.find((player) => {
+              return player.socketId === socketId;
+            });
+            if (disconnectedPlayer) {
+              for (let card of disconnectedPlayer.cards) {
+                whiteDiscards.push(card.content);
+              }
+            }
+
             if (socketId === currentGame.public.cardCsar) {
               console.log('card csar left during selection new round')
               // remove listeners for selecting card
