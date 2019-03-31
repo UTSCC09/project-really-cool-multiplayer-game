@@ -50,6 +50,12 @@ class Lobby extends React.Component {
           this.setState({lobbyState: "game started"});
           console.log(`start game, initial cards: ${gameState.private.cards}`)
         });
+        this.lobby.on('disconnect', (reason) => {
+          if (reason === 'io server disconnect') {
+            reason = 'you were kicked from the lobby';
+          }
+          this.setState({lobbyState: 'error', error: reason});
+        });
         // TODO: Give a default username on connect if none
         let username = window.sessionStorage.getItem('nickname-'+this.roomId);
         if (username) {
@@ -199,7 +205,7 @@ class Lobby extends React.Component {
               <div className="row">
                 <span className="col-8 my-auto">{username}</span>
                 <div className="text-right col-4">
-                  { displayKick && <button type="button" className="btn btn-danger align-middle" onClick={this.kickPlayer(player)}> X </button>}
+                  { displayKick && <button type="button" className="btn btn-danger align-middle" onClick={() => {this.kickPlayer(player)}}> X </button>}
                 </div>
               </div>
             </li>

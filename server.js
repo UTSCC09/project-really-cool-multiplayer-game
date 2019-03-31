@@ -399,6 +399,9 @@ app.get('/api/create-room/', (req, res) => {
         console.log(`${username}: ${socket.id}`)
         if (currentGame.players.length === 0) {
           socket.on('start game', startGame);
+          socket.on('kick player', (playerSocketId) => {
+            lobby.connected[playerSocketId].disconnect();
+          });
         }
         currentGame.players.push({username, socketId: socket.id});
         if (callback) {
@@ -418,6 +421,7 @@ app.get('/api/create-room/', (req, res) => {
         }
         // remove start game listener so can't start game multiple times
         lobby.connected[currentGame.players[0].socketId].removeAllListeners('start game');
+        lobby.connected[currentGame.players[0].socketId].removeAllListeners('kick player');
         // remove connection listener so new people can't join a room in progress
         lobby.removeAllListeners('connection');
         games[roomId].phase = "playing";
@@ -680,6 +684,9 @@ app.get('/api/create-room/', (req, res) => {
         } else if (idx === 0) {
           // person was room host
           lobby.connected[currentGame.players[0].socketId].on('start game', startGame);
+          lobby.connected[currentGame.players[0].socketId].on('kick player', (playerSocketId) => {
+            lobby.connected[playerSocketId].disconnect();
+          });
         }
         games[roomId].numPlayers--;
         lobby.emit('player list', currentGame.players);
