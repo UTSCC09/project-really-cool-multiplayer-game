@@ -35,7 +35,7 @@ const instructionScheme = new mongoose.Schema({
 
 const deckScheme = new mongoose.Schema({
   name: String,
-  type: String,
+  type: { type: String, enum: ['WHITE', 'BLACK'] },
   ownerId: mongoose.Schema.Types.ObjectId,
   cards: [String],
 });
@@ -259,6 +259,14 @@ app.get('/api/user/:id/friend/requests/', function(req, res) {
   });
 });
 
+app.get('/api/user/:id/decks/', function(req, res) {
+  let id = req.params.id;
+  Deck.find({ownerId:id}, function(err, decks) {
+    if (err) return res.send(500, {error: err});
+    else return res.json(decks);
+  });
+});
+
 
 // DEPRECATED use GET /api/user/:id/ with token in header
 app.get('/api/user/token/:token/', function(req, res) {
@@ -477,10 +485,20 @@ app.get('/api/create-room/', (req, res) => {
         let gameId = "5c8dcad255c6482c14aa7326"; // settings.gameId
         let game = await Game.findById(gameId);
 
+        let whiteDeckId = settings.whiteDeckId;
+        let blackDeckId = settings.blackDeckId;
+
+        if (!whiteDeckId || whiteDeckId === "default") {
+          whiteDeckId = "5c8dc89d47e8042ba5673c20";
+        }
+        if (!blackDeckId || blackDeckId === "default") {
+          blackDeckId = "5c8dc7c0b6aa482b6f8ac885";
+        }
+
         currentGame.public = {
           blackCard: "",
           cardCsar: '',
-          settings: {winningScore: 5},
+          settings: {winningScore: settings.winningPoints},
           players: [],  // {username, score}
           whiteCards: [],
           winner: '',
@@ -492,13 +510,12 @@ app.get('/api/create-room/', (req, res) => {
           whiteCards: [], // {owner: socketId of the owner, content: string of its contents}
           cardCsarIdx: currentGame.players.length - 1
         }
-        // TODO implement the deck
-        // TODO, pull deck from database and do thing
-        // let deck = Array.from(Array(200).keys()); // cause we havent made decks yet
-        // let whiteDeck = Array.from(Array(200).keys());
-        // let blackDeck = Array.from(Array(200).keys());
-        let whiteDeck = game.decks.get('whiteDeck').cards;
-        let blackDeck = game.decks.get('blackDeck').cards;
+
+        // TODO change these to ids received from settings
+        let whiteDeck = await Deck.findById(whiteDeckId).cards;
+        let blackDeck = await Deck.findById(blackDeckId).cards;
+        // let whiteDeck = game.decks.get('whiteDeck').cards;
+        // let blackDeck = game.decks.get('blackDeck').cards;
 
         // https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
         function shuffle(a) {

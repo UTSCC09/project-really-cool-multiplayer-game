@@ -7,6 +7,7 @@ class User extends React.Component {
     this.getFriends = this.getFriends.bind(this);
     this.friendRequestResponse = this.friendRequestResponse.bind(this);
     this.getIncomingFriendRequests = this.getIncomingFriendRequests.bind(this);
+    this.toUserPage = this.toUserPage.bind(this);
     let userId = props.match.params.id;
     let id = document.cookie.match('(^|;) ?' + 'id' + '=([^;]*)(;|$)');
     id = id ? id[2] : null
@@ -128,6 +129,11 @@ class User extends React.Component {
     }
   }
 
+  toUserPage(user) {
+    if (user && user._id) {
+      window.location.href = '/user/' + user._id + '/';
+    }
+  }  
   setAddDeckState(bool, deckListIndex) {
     let res = {};
     if (this.state.newDeckToggle !== bool) {
@@ -218,7 +224,7 @@ class User extends React.Component {
         return (
           <div className="w-50">
             <li className="list-group-item ml-3">
-              <span>
+              <span onClick={() => {this.toUserPage(user)}} className="clickable">
                 <img src={user.photo} className="profileImgSm d-inline-block m-2"/>
                 {user.givenName + " " + user.familyName}
               </span>
@@ -230,9 +236,6 @@ class User extends React.Component {
       );
     }
     if (clientPage && this.state.incomingRequests) {
-      // this.state.incomingRequests do a map
-      // console.log(this.state.incomingRequests && this.state.incomingRequests !== []);
-      // console.log(this.state.incomingRequests !== [], this.state.incomingRequests);
       friendRequests = (this.state.incomingRequests && (this.state.incomingRequests.length !== 0)) ? this.state.incomingRequests.map((user) => {
         return (
           <div className="w-50">

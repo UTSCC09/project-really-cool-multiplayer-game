@@ -7,7 +7,10 @@ class Home extends React.Component {
     this.createGame = this.createGame.bind(this);
     this.logOut = this.logOut.bind(this);
     this.authenticate = this.authenticate.bind(this);
-    this.state = { user: null }
+    this.toUserPage = this.toUserPage.bind(this);
+    let id = document.cookie.match('(^|;) ?' + 'id' + '=([^;]*)(;|$)');
+    id = id ? id[2] : null
+    this.state = { user: null, clientUserId: id }
     this.getUser();
   }
 
@@ -15,8 +18,7 @@ class Home extends React.Component {
     // https://plainjs.com/javascript/utilities/set-cookie-get-cookie-and-delete-cookie-5/
     let token = document.cookie.match('(^|;) ?' + 'token' + '=([^;]*)(;|$)');
     token = token ? token[2] : null;
-    let id = document.cookie.match('(^|;) ?' + 'id' + '=([^;]*)(;|$)');
-    id = id ? id[2] : null
+    let id = this.state.clientUserId;
 
     if (token && id) {
       fetch('/api/user/' + id + '/', {
@@ -51,14 +53,25 @@ class Home extends React.Component {
   }
 
   authenticate() {
-    console.log(document.cookie);
     window.location.href = '/auth/google/';
+  }
+
+  toUserPage() {
+    if (this.state.clientUserId) {
+      window.location.href = '/user/' + this.state.clientUserId + '/';
+    }
   }
   
   render() {
     let userPane = this.state.user ? (
       <div className="d-flex flex-column justify-content-start align-items-start p-2">
-        <button type="button" className="btn btn-primary m-1" onClick={this.logOut}> Log out</button>
+        <span>
+          <div onClick={this.toUserPage} className="d-inline-block clickable">
+            <img src={this.state.user.photo} className="profileImgSm d-inline-block m-2"/>
+            {this.state.user.givenName + " " + this.state.user.familyName}
+          </div>
+          <button type="button" className="btn btn-primary m-1 ml-2" onClick={this.logOut}> Log out</button>
+        </span>
       </div>
     ) : (
       <div className="d-flex flex-column justify-content-start align-items-start p-2">
@@ -83,8 +96,8 @@ class Home extends React.Component {
             </span>
           </div>
 
-          <div className="d-flex flex-column justify-content-end align-items-start p-2 invisible">
-            <button type="button" className="btn btn-primary m-1"> Log in</button>
+          <div className="invisible">
+            {userPane}
           </div>
         </div>
         <div className="px-5 py-2">
