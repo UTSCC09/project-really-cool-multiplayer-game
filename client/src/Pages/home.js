@@ -5,6 +5,7 @@ class Home extends React.Component {
     super(props);
     this.getUser = this.getUser.bind(this);
     this.createGame = this.createGame.bind(this);
+    this.joinGame = this.joinGame.bind(this);
     this.logOut = this.logOut.bind(this);
     this.authenticate = this.authenticate.bind(this);
     this.toUserPage = this.toUserPage.bind(this);
@@ -43,6 +44,21 @@ class Home extends React.Component {
     }).then((roomId) => {
       window.sessionStorage.setItem('nickname-'+roomId, nickname);
       window.location.href = `/lobby?id=${roomId}`;
+    });
+  }
+
+  joinGame() {
+    let nickname = document.getElementById('nickname').value;
+    nickname = nickname || Math.random().toString(36).slice(2);; //TODO real random name
+    fetch('/api/lobby/join').then((response) => {
+      return  response.text();
+    }).then((roomId) => {
+      if (roomId) {
+        window.sessionStorage.setItem('nickname-'+roomId, nickname);
+        window.location.href = `/lobby?id=${roomId}`;
+      } else {
+        this.createGame();
+      }
     });
   }
 
@@ -92,7 +108,7 @@ class Home extends React.Component {
             If you don't choose one we'll make one for you
             <span>
               <button type="button" className="btn btn-primary m-3" onClick={this.createGame}>Host Game</button>
-              <button type="button" className="btn btn-primary m-3">Join a Game</button>
+              <button type="button" className="btn btn-primary m-3" onClick={this.joinGame}>Join a Game</button>
             </span>
           </div>
 

@@ -252,6 +252,17 @@ app.get('/api/lobby/:id/status', function(req, res) {
   }
 });
 
+app.get('/api/lobby/join', function(req, res) {
+  let lobby;
+  for (game in games) {
+    if (games[game].phase === 'lobby' && games[game].numPlayers < 8) {
+      lobby = game;
+      break;
+    }
+  }
+  res.status(200).send(lobby);
+});
+
 // UPDATE
 app.put('/api/user/:id/friend/', function(req, res) {
   let recipientId = sanitize(req.params.id);
@@ -360,6 +371,10 @@ let games = {};
 
 app.get('/api/create-room/', (req, res) => {
     let roomId = crypto.randomBytes(5).toString('hex');
+    // generate ids until we get one not being used
+    while (games[roomId]) {
+      roomId = crypto.randomBytes(5).toString('hex');
+    }
     console.log(`new room ${roomId}`)
     games[roomId] = {numPlayers: 0, phase: "lobby"};
     let currentGame = { public: {}, players: [] };
@@ -687,6 +702,7 @@ app.get('/api/create-room/', (req, res) => {
           });
           lobby.removeAllListeners();
           delete io.nsps[lobby];
+          delete games[roomId];
           return -1;
         }
         return idx;
