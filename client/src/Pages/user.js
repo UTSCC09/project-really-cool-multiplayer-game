@@ -21,8 +21,11 @@ class User extends React.Component {
       submitState: null,
       deckListIndex: -1,
       formNameInput: null,
+      nameInputIsValid: true,
       formTypeInput: null,
+      typeInputIsValid: true,
       formContentInput: null,
+      contentInputIsValid: true,
       clientUserId: id};
     this.formInput = {name: React.createRef(), type: React.createRef(), content: React.createRef()};
     this.getUser();
@@ -138,7 +141,7 @@ class User extends React.Component {
       window.location.href = '/user/' + user._id + '/';
     }
   }
-  setAddDeckState(bool, deckListIndex) {
+  onDeckListIndexChange(bool, deckListIndex) {
     let res = {};
     if (this.state.newDeckToggle !== bool) {
       res.newDeckToggle = bool
@@ -149,58 +152,80 @@ class User extends React.Component {
       res.formNameInput = deckListIndex!==-1?this.state.decks[deckListIndex].name:"";
       res.formTypeInput = deckListIndex!==-1?this.state.decks[deckListIndex].type:"";
       res.formContentInput= deckListIndex!==-1?this.state.decks[deckListIndex].cards.toString():"";
+      res.nameInputIsValid = true;
+      res.typeInputIsValid = true;
+      res.contentInputIsValid = true;
     }
     this.setState(res);
   }
 
   handleForm() {
-    if (this.state.submitState === 'add') {
-      let contentArray = this.formInput.content.current.value.split(",").map(str => str.trim());
-      fetch('/api/deck/', {
-        method: 'POST',
-        body: JSON.stringify({  content: contentArray,
-                                name: this.formInput.name.current.value,
-                                type: this.formInput.type.current.value}),
-        headers:{
-          'Content-Type': 'application/json'
-        }
-      })
-      .then(response => {
-        console.log('Deck Added Successfully:', JSON.stringify(response))
-        this.getDecks();
-        this.forceUpdate();
-      })
-      .catch(error => console.error('Error:', error));
-    } else if (this.state.submitState === 'delete') {
-      this.setState({deckListIndex: -1});
-      fetch('/api/deck/'+this.state.decks[this.state.deckListIndex]._id, {
-        method: 'DELETE'
-      })
-      .then(response => {
-        console.log('Deck Deleted Successfully:', JSON.stringify(response))
-        this.getDecks();
-        this.forceUpdate();
-      })
-      .catch(error => console.error('Error:', error));
-    } else if (this.state.submitState === 'update') {
-      let contentArray = this.formInput.content.current.value.split(",").map(str => str.trim());
-      fetch('/api/deck/'+this.state.decks[this.state.deckListIndex]._id, {
-        method: 'PUT',
-        body: JSON.stringify({  content: contentArray,
-                                name: this.formInput.name.current.value,
-                                type: this.formInput.type.current.value}),
-        headers:{
-          'Content-Type': 'application/json'
-        }
-      })
-      .then(response => {
-        console.log('Deck Updated Successfully:', JSON.stringify(response))
-        this.getDecks();
-        this.forceUpdate();
-      })
-      .catch(error => console.error('Error:', error));
+    //sanitize
+    let nameInput = this.formInput.name.current.value;
+    let typeInput = this.formInput.type.current.value;
+    let contentInput = this.formInput.content.current.value.split(',');
+    let isNameInputValid = nameInput.length != 0;
+    let isTypeInputValid = typeInput === 'BLACK' || typeInput === 'WHITE';
+    let isContentInputValidB = contentInput.length > 10
+    let isContentInputValidW = contentInput.length > 60
+    let isContentInputValid = isContentInputValidB||isContentInputValidW
+    let valid = isNameInputValid && isTypeInputValid && isContentInputValid;
+    if(valid) {
+      if (this.state.submitState === 'add') {
+        let contentArray = contentInput.map(str => str.trim());
+        this.onDeckListIndexChange(true, -1);
+        fetch('/api/deck/', {
+          method: 'POST',
+          body: JSON.stringify({  content: contentArray,
+                                  name: nameInput,
+                                  type: typeInput}),
+          headers:{
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(response => {
+          console.log('Deck Added Successfully:', JSON.stringify(response))
+          this.getDecks();
+          this.forceUpdate();
+        })
+        .catch(error => console.error('Error:', error));
+      } else if (this.state.submitState === 'delete') {
+        this.onDeckListIndexChange(true, -1);
+        fetch('/api/deck/'+this.state.decks[this.state.deckListIndex]._id, {
+          method: 'DELETE'
+        })
+        .then(response => {
+          console.log('Deck Deleted Successfully:', JSON.stringify(response))
+          this.getDecks();
+          this.forceUpdate();
+        })
+        .catch(error => console.error('Error:', error));
+      } else if (this.state.submitState === 'update') {
+        let contentArray = contentInput.map(str => str.trim());
+        fetch('/api/deck/'+this.state.decks[this.state.deckListIndex]._id, {
+          method: 'PUT',
+          body: JSON.stringify({  content: contentArray,
+                                  name: nameInput,
+                                  type: typeInput}),
+          headers:{
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(response => {
+          console.log('Deck Updated Successfully:', JSON.stringify(response))
+          this.getDecks();
+          this.forceUpdate();
+        })
+        .catch(error => console.error('Error:', error));
+      }
+      this.forceUpdate();
+    } else {
+      this.setState({
+        nameInputIsValid: isNameInputValid,
+        typeInputIsValid: isTypeInputValid,
+        contentInputIsValid: isContentInputValid
+      });
     }
-    this.forceUpdate();
   }
 
   addDeckSubmit(e) {
@@ -304,12 +329,12 @@ class User extends React.Component {
     );
 
     let addNewDeckEntry = this.state.clientUserId === this.state.userId ?
-    (<a className={"list-group-item list-group-item-action" + (this.state.deckListIndex === -1?" active":"")} id="list-add-new-deck" onClick={(e) => this.setAddDeckState(true, -1)}>Add New Deck...</a>):
+    (<a className={"list-group-item list-group-item-action" + (this.state.deckListIndex === -1?" active":"")} id="list-add-new-deck" onClick={(e) => this.onDeckListIndexChange(true, -1)}>Add New Deck...</a>):
     null;
 
     let deckListEntries = this.state.decks?
     this.state.decks.map((deck) => {
-      return(<a className={"list-group-item list-group-item-action" + (this.state.deckListIndex === this.state.decks.indexOf(deck)?" active":"")} onClick={(e) => this.setAddDeckState(false, this.state.decks.indexOf(deck))}>{deck.name}</a>)
+      return(<a className={"list-group-item list-group-item-action" + (this.state.deckListIndex === this.state.decks.indexOf(deck)?" active":"")} onClick={(e) => this.onDeckListIndexChange(false, this.state.decks.indexOf(deck))}>{deck.name}</a>)
     }):null;
 
     let deckSubmit = this.state.newDeckToggle?
@@ -333,22 +358,31 @@ class User extends React.Component {
       </div>
     </div>
     <div className="col-8">
-      <form>
+      <form onSubmit={(e)=>{e.preventDefault()}}>
         <div className="form-group">
         <label for="deck-name-input">Deck Name</label>
-        <input name="formNameInput" type="text" ref={this.formInput.name} className="form-control" id="deck-name-input" disabled={this.state.clientUserId !== this.state.userId} value={this.state.formNameInput} onChange={this.handleInputChange}></input>
+        <input name="formNameInput" type="text" ref={this.formInput.name} className={"form-control"+(this.state.nameInputIsValid?"":" is-invalid")} id="deck-name-input" disabled={this.state.clientUserId !== this.state.userId} value={this.state.formNameInput} onChange={this.handleInputChange} ></input>
+        <div class="invalid-feedback">
+            Invalid Input.
+          </div>
         </div>
         <div className="form-group">
           <label for="deck-type-select">Deck Type</label>
-          <select name="formTypeInput" ref={this.formInput.type} className="custom-select mr-sm-2" id="deck-type-select" disabled={this.state.clientUserId !== this.state.userId} value={this.state.formTypeInput} onChange={this.handleInputChange}>
+          <select name="formTypeInput" ref={this.formInput.type} className={"custom-select mr-sm-2"+(this.state.typeInputIsValid?"":" is-invalid")} id="deck-type-select" disabled={this.state.clientUserId !== this.state.userId} value={this.state.formTypeInput} onChange={this.handleInputChange}>
             <option>Choose...</option>
             <option value="BLACK" selected={this.state.deckListIndex!==-1?this.state.decks[this.state.deckListIndex].type==='BLACK':false}>Black Deck</option>
             <option value="WHITE" selected={this.state.deckListIndex!==-1?this.state.decks[this.state.deckListIndex].type==='WHITE':false}>White Deck</option>
           </select>
+          <div class="invalid-feedback">
+            Please choose a card type.
+          </div>
         </div>
         <div className="form-group">
           <label for="cards-text-area">Cards</label>
-          <textarea name="formContentInput" rows="4" ref={this.formInput.content} className="form-control" id="cards-text-area" placeholder="Enter your custom cards seperated by comma's." disabled={this.state.clientUserId !== this.state.userId} value={this.state.formContentInput} onChange={this.handleInputChange}></textarea>
+          <textarea name="formContentInput" rows="4" ref={this.formInput.content} className={"form-control"+(this.state.contentInputIsValid?"":" is-invalid")} id="cards-text-area" placeholder="Enter your custom cards seperated by commas." disabled={this.state.clientUserId !== this.state.userId} value={this.state.formContentInput} onChange={this.handleInputChange}></textarea>
+          <div class="invalid-feedback">
+            Invalid Input. Please add enough cards for your respective deck type.
+          </div>
         </div>
         {deckSubmitCond}
       </form>
