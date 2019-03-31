@@ -95,13 +95,13 @@ function drawCardRow(x, y, width, cards, cardColor, textColor, emit, isSelectabl
   }
 }
 
-function drawPlayerHUD(x, y, name, score, isCsar) {
+function drawPlayerHUD(x, y, name, score, isCsar, HUDColor) {
   return () => {
       let paper = window.paper;
       // draw playHUD
       var playerHUDPoint = new paper.Point(x,y);
       var playerHUD = new paper.Path.Rectangle(playerHUDPoint,PLAYERHUD_WIDTH, PLAYERHUD_HEIGHT);
-      playerHUD.fillColor = PLAYERHUD_FILL_COLOR;
+      playerHUD.fillColor = HUDColor?HUDColor:PLAYERHUD_FILL_COLOR;
       playerHUD.strokeColor = PLAYERHUD_STROKE_COLOR;
       // draw play names
       var playerNameText = new paper.PointText(playerHUDPoint.add(10,20));
@@ -116,18 +116,33 @@ function drawPlayerHUD(x, y, name, score, isCsar) {
   }
 }
 
-function drawWinOverlay(isWinner) {
+function drawWinOverlay(isWinner, winner, players, curPlayerSocket) {
   return () => {
     let paper = window.paper;
     // draw win text
     var winText = new paper.PointText(300, paper.view.size.height/2 - 100)
-    winText.content = isWinner?"NICE! YOU DA WINNA!":"YOU LOST LMAOOO000!"
-    winText.fontSize = 80;
+    winText.content = isWinner?"congratulations! You Win!":"You Lost..."
+    winText.fontSize = 50;
 
+    let back_x = 300;
+    let back_y = paper.view.size.height/2;
+
+    var backText = new paper.PointText(back_x+25, back_y+25)
+    backText.content = "Back to Home Screen";
+    backText.fontSize = 20;
+
+    var backBox = new paper.Path.Rectangle(back_x, back_y, 250, 50);
+    backBox.strokeColor = "black";
+    backBox.fillColor = new paper.Color(0.5, 0.1);
+    backBox.onMouseUp = () => {
+      window.location.href = '/';
+    };
+    
+    drawPlayerInfo(players, curPlayerSocket, null, winner).call();
   };
 }
 
-function drawPlayerInfo(players, curPlayerId, curCardCsar) {
+function drawPlayerInfo(players, curPlayerSocket, curCardCsar, winner) {
   return() => {
     let paper = window.paper;
     let maxWidth = paper.view.size.width;
@@ -144,7 +159,6 @@ function drawPlayerInfo(players, curPlayerId, curCardCsar) {
     let player5_y = 0;
     let player6_x = TABLE_PADDING_X + (tableWidth*3/4) - (PLAYERHUD_WIDTH/2);
     let player6_y = 0;
-    // TODO
     let player1_x = maxWidth - HAND_PADDING_X/2 - PLAYERHUD_WIDTH/2;
     let player1_y = maxHeight - PLAYERHUD_HEIGHT;
     let playerPoints = [
@@ -161,14 +175,14 @@ function drawPlayerInfo(players, curPlayerId, curCardCsar) {
     let player1 = null;
     for (i=0; i < players.length; i++) {
       let player = players[i];
-      if (player.socketId === curPlayerId) {
+      if (player.socketId === curPlayerSocket) {
         player1 = player;
       } else {
         y+=1
-        drawPlayerHUD(playerPoints[y].x, playerPoints[y].y, player.username, player.score, player.socketId === curCardCsar).call();
+        drawPlayerHUD(playerPoints[y].x, playerPoints[y].y, player.username, player.score, player.socketId === curCardCsar, player.socketId === winner?"green":null).call();
       }
     }
-    drawPlayerHUD(playerPoints[0].x, playerPoints[0].y, player1.username, player1.score, player1.socketId === curCardCsar).call();
+    drawPlayerHUD(playerPoints[0].x, playerPoints[0].y, player1.username, player1.score, player1.socketId === curCardCsar, player1.socketId === winner?"green":null).call();
   }
 }
 
@@ -233,10 +247,8 @@ function renderScreen(gameState) {
       drawPlayerPrompt(prompt).call();
     } else if (gameState.phase === "game over") {
       let isWinner = gameState.public.winner === gameState.private.socketId;
-      // draw table
-      drawTable().call();
       // draw win screen
-      drawWinOverlay(isWinner).call();
+      drawWinOverlay(isWinner, gameState.public.winner, gameState.public.players, gameState.private.socketId).call();
     }
   };
 }
@@ -317,11 +329,6 @@ class Game extends React.Component {
   render() {
     return(
       <div className="game">
-        {/* <button onClick={renderScreen(waitingState)}>waiting</button>
-        <button onClick={renderScreen(pickingState)}>picking</button>
-        <button onClick={renderScreen(judgingState)}>judging</button>
-        <button onClick={renderScreen(gameoverState)}>game over</button> */}
-        {/* <button onClick={renderScreen(lobbyState)}>lobby</button> */}
       </div>
     )
   }
