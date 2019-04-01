@@ -151,7 +151,14 @@ class User extends React.Component {
       console.log(this.state.decks[deckListIndex]);
       res.formNameInput = deckListIndex!==-1?this.state.decks[deckListIndex].name:"";
       res.formTypeInput = deckListIndex!==-1?this.state.decks[deckListIndex].type:"";
-      res.formContentInput= deckListIndex!==-1?this.state.decks[deckListIndex].cards.toString().replace(/,/g,'<>'):"";
+      let cardString = "";
+      if (deckListIndex!==-1) {
+        this.state.decks[deckListIndex].cards.forEach(card => {
+          cardString = cardString+"<>"+card
+        });
+        cardString = cardString.substring(2);
+      }
+      res.formContentInput= deckListIndex!==-1?cardString:"";
       res.nameInputIsValid = true;
       res.typeInputIsValid = true;
       res.contentInputIsValid = true;
