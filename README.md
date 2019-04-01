@@ -1,5 +1,5 @@
 # Shuffle With Friends
-Url: http://shufflewithfriends.herokuapp.com/
+Url: https://shufflewithfriends.herokuapp.com/
 # The Team
 Aaron (Yi Shiun) Chiu, Bilal Khan, Alex Green
 # Description
