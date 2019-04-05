@@ -27,3 +27,5 @@ Shuffle With Friends is a turn-based multiplayer party game that hosts up to 8 p
 5. Scalability and Performance
 # Video
 https://youtu.be/UmVAVqop6NY
+# API Documentation
+https://github.com/UTSCC09/project-really-cool-multiplayer-game/blob/master/doc/README.md
