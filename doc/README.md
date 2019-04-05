@@ -4,29 +4,29 @@
 
 ### Create
 
-- description: Create a new deck
-- request: 'POST /api/deck/'
+- Description: Create a new deck
+- Request: 'POST /api/deck/'
   - content-type: 'application/json'
   - body: object
     - content: ([String]) List of the text of each card of new deck
     - name: (String) The name of the deck
     - type: ("WHITE" or "BLACK") Is this a white or black deck?
-- response: 200
+- Response: 200
   - content-type: 'application/json'
   - body: (String) the database object id of the new object
-- response: 400
+- Response: 400
   - body: object
     - error: (String) "Deck type must be either WHITE or BLACK"
-- response: 400
+- Response: 400
   - body: object
     - error: (String) "Not enough unique cards in deck, WHITE decks must have at least 60"
-- response: 400
+- Response: 400
   - body: object
     - error: (String) "Not enough unique cards in deck, BLACK decks must have at least 10"    
-- response: 401
+- Response: 401
   - body: object
     - error: (String) "Access denied"
-- response: 500
+- Response: 500
   - body: object
     - error: (String) Server error
 ```
@@ -39,11 +39,11 @@ $ curl -X POST
 
 ### Read
 
-- description: Get a specific deck form database
-- request: 'GET /api/deck/:id/'
+- Description: Get a specific deck form database
+- Request: 'GET /api/deck/:id/'
   - params:
     - id: Database id of desired deck
-- response: 200
+- Response: 200
   - content-type: 'application/json'
   - body: object
     - \_id: Database id of the returned deck
@@ -51,10 +51,10 @@ $ curl -X POST
     - type: (String) The type of the deck ("WHITE" OR "BLACK")
     - cards: ([String]) Text content of each card in the deck
     - ownerId (String) Database id of the creator of the deck
-- response: 404
+- Response: 404
   - body: object
     - error: (String) "Deck not found"
-- response: 500
+- Response: 500
   - body: object
     - error: (String) Server error
 
@@ -64,15 +64,15 @@ $ curl https://shufflewithfriends.herokuapp.com/api/deck/5ca0848e898f5f29e5fa462
 
 ### Update
 
-- description: Update a specific deck in database
-- request: 'PUT /api/deck/:id/'
+- Description: Update a specific deck in database
+- Request: 'PUT /api/deck/:id/'
   - params:
     - id: Database id of desired deck
   - body: object
     - content: ([String]) List of the text of each card of new deck
     - name: (String) The name of the deck
     - type: ("WHITE" or "BLACK") Is this a white or black deck?
-- response: 200
+- Response: 200
   - content-type: 'application/json'
   - body: object
     - \_id: Database id of the returned deck
@@ -80,19 +80,19 @@ $ curl https://shufflewithfriends.herokuapp.com/api/deck/5ca0848e898f5f29e5fa462
     - type: (String) The type of the deck ("WHITE" OR "BLACK")
     - cards: ([String]) Text content of each card in the deck
     - ownerId (String) Database id of the creator of the deck
-- response: 400
+- Response: 400
   - body: object
     - error: (String) "Deck type must be either WHITE or BLACK"
-- response: 400
+- Response: 400
   - body: object
     - error: (String) "Not enough unique cards in deck, WHITE decks must have at least 60"
-- response: 400
+- Response: 400
   - body: object
     - error: (String) "Not enough unique cards in deck, BLACK decks must have at least 10"    
-- response: 401
+- Response: 401
   - body: object
     - error: (String) "Access denied"
-- response: 500
+- Response: 500
   - body: object
     - error: (String) Server error
 
@@ -105,9 +105,9 @@ $ curl -X PUT
 
 ### Delete
 
-- description: Delete a specific deck from the database
-- request: 'DELETE /api/deck/:id/'
-- response: 200
+- Description: Delete a specific deck from the database
+- Request: 'DELETE /api/deck/:id/'
+- Response: 200
   - content-type: 'application/json'
   - body: object
     - \_id: Database id of the returned deck
@@ -115,10 +115,10 @@ $ curl -X PUT
     - type: (String) The type of the deck ("WHITE" OR "BLACK")
     - cards: ([String]) Text content of each card in the deck
     - ownerId (String) Database id of the creator of the deck
-- response: 404
+- Response: 404
   - body: object
     - error: (String) "Deck not found"
-- response: 500
+- Response: 500
   - body: object
     - error: (String) Server error
 
@@ -131,20 +131,20 @@ $ curl -X DELETE
 
 ### Read
 
-- description: Get a specific user from database
-- request: 'GET /api/user/:id/'
+- Description: Get a specific user from database
+- Request: 'GET /api/user/:id/'
   - params:
     - id: Database id of desired user
   - headers:
     - token: Auth token of the user being requested, detailed user info returned if correct token is present
-- response: 200
+- Response: 200
   - content-type: 'application/json'
   - body: object
     - givenName: (String) Given name of the user
     - familyName: (String) Family name of the user
     - friends: ([String]) Database ids of each of the users friends
     - photo: (String) Link to user's profile photo
-- response: 200
+- Response: 200
   - content-type: 'application/json'
   - body: object
     - \_id: (String) Database id of user
@@ -157,10 +157,10 @@ $ curl -X DELETE
     - photo: (String) Link to user's profile photo    
     - incomingRequests: ([String]) Database ids of users that want to add user as a friend
     - pendingRequests: ([String]) Database ids of users that user wants to add as a friend
-- response: 404
+- Response: 404
   - body: object
     - error: (String) "User not found"
-- response: 500
+- Response: 500
   - body: object
     - error: (String) Server error
 
@@ -168,21 +168,21 @@ $ curl -X DELETE
 $ curl https://shufflewithfriends.herokuapp.com/api/user/5c8a02a89f0f3cbb9a5b75f6/
 ```
 
-- description: Get a user's friends from database
-- request: 'GET /api/user/:id/friend/'
+- Description: Get a user's friends from database
+- Request: 'GET /api/user/:id/friend/'
   - params:
     - id: Database id of user
-- response: 200
+- Response: 200
   - content-type: 'application/json'
   - body: [object]
     - givenName: (String) Given name of the user
     - familyName: (String) Family name of the user
     - friends: ([String]) Database ids of each of the users friends
     - photo: (String) Link to user's profile photo    
-- response: 404
+- Response: 404
   - body: object
     - error: (String) "User not found"
-- response: 500
+- Response: 500
   - body: object
     - error: (String) Server error
 
@@ -190,34 +190,34 @@ $ curl https://shufflewithfriends.herokuapp.com/api/user/5c8a02a89f0f3cbb9a5b75f
 $ curl https://shufflewithfriends.herokuapp.com/api/user/5c8a02a89f0f3cbb9a5b75f6/friend/
 ```
 
-- description: Get a user's friends from database
-- request: 'GET /api/user/:id/friend/requests/'
+- Description: Get a user's friends from database
+- Request: 'GET /api/user/:id/friend/requests/'
   - params:
     - id: Database id of user
   - query:
     - type: "Incoming" or "Pending". Retrieve incoming or pending friend requests
   - headers:
     - token: Auth token of user whose friend requests are to be queried
-- response: 200
+- Response: 200
   - content-type: 'application/json'
   - body: [object]
     - givenName: (String) Given name of the user
     - familyName: (String) Family name of the user
     - friends: ([String]) Database ids of each of the users friends
     - photo: (String) Link to user's profile photo
-- response: 400
+- Response: 400
   - body: object
     - error: (String) "Incorrect request type: '{type}'. Must be either 'incoming' or 'pending'."          
-- response: 401
+- Response: 401
   - body: object
     - error: (String) "No auth token"
-- response: 401
+- Response: 401
   - body: object
     - error: (String) "User not authorized"    
-- response: 404
+- Response: 404
   - body: object
     - error: (String) "User not found"
-- response: 500
+- Response: 500
   - body: object
     - error: (String) Server error
 
@@ -226,18 +226,18 @@ $ curl -H "token: `valid auth token`"
         https://shufflewithfriends.herokuapp.com/api/user/5c8a02a89f0f3cbb9a5b75f6/friend/requests?type="incoming"
 ```
 
-- description: Get a user's decks from database
-- request: 'GET /api/user/:id/decks/'
+- Description: Get a user's decks from database
+- Request: 'GET /api/user/:id/decks/'
   - params:
     - id: Database id of user
-- response: 200
+- Response: 200
   - content-type: 'application/json'
   - body: [object]
     - givenName: (String) Given name of the user
     - familyName: (String) Family name of the user
     - friends: ([String]) Database ids of each of the users friends
     - photo: (String) Link to user's profile photo
-- response: 500
+- Response: 500
   - body: object
     - error: (String) Server error
 
@@ -247,8 +247,8 @@ $ curl https://shufflewithfriends.herokuapp.com/api/user/5c8a02a89f0f3cbb9a5b75f
 
 ### Update
 
-- description: Send, accept or decline a friend request to a user
-- request: 'PUT /api/user/:id/friend/requests/'
+- Description: Send, accept or decline a friend request to a user
+- Request: 'PUT /api/user/:id/friend/requests/'
   - params:
     - id: Database id of user who will be sent friend request or user whose friend request will be accepted/declined
   - body:
@@ -256,31 +256,31 @@ $ curl https://shufflewithfriends.herokuapp.com/api/user/5c8a02a89f0f3cbb9a5b75f
     - requestType: "SEND" or "ACCEPT" or "DECLINE", action to be taken in this request
   - headers:
     - token: auth token of user making request
-- response: 200
+- Response: 200
   - content-type: 'application/json'
   - body: {}
-- response: 400
+- Response: 400
   - body: object
     - error: (String) "Incorrect request type: '{requestType}'. Must be either 'SEND', 'ACCEPT', or 'DECLINE'."
-- response: 400
+- Response: 400
   - body: object
     - error: (String) "Identical Ids"
-- response: 404
+- Response: 404
   - body: object
     - error: (String) "User: {recipientId} has not sent a request to user: {senderId}"  
-- response: 401
+- Response: 401
   - body: object
     - error: (String) "No auth token"
-- response: 401
+- Response: 401
   - body: object
     - error: (String) "User not authorized"    
-- response: 404
+- Response: 404
   - body: object
     - error: (String) "Sending user: {sendId} not found"
-- response: 404
+- Response: 404
   - body: object
     - error: (String) "Recipient user: {recipientId} not found"    
-- response: 500
+- Response: 500
   - body: object
     - error: (String) Server error
 
@@ -295,29 +295,29 @@ $ curl -X PUT
 
 ### Read
 
-- description: Get data on a given lobby
-- request: 'GET /api/lobby/3f10b0a40d/status'
+- Description: Get data on a given lobby
+- Request: 'GET /api/lobby/3f10b0a40d/status'
   - params:
     - id: Id of the lobby queried
-- response: 200
+- Response: 200
   - content-type: 'application/json'
   - body: (String) "game is already in progress"
-- response: 200
+- Response: 200
   - content-type: 'application/json'
   - body: (String) "game lobby is full"
-- response: 404
+- Response: 404
 
-- description: Returns id of first available open lobby
-- request: 'GET /api/lobby/join'
-- response: 200
+- Description: Returns id of first available open lobby
+- Request: 'GET /api/lobby/join'
+- Response: 200
   - content-type: 'application/json'
   - body: (String) "{lobbyId}"
-- response: 200
+- Response: 200
   - content-type: 'application/json'
   - body: (undefined)
 
-- description: Creates a lobby and returns the id
-- request: 'GET /api/create-room/'
-- response: 200
+- Description: Creates a lobby and returns the id
+- Request: 'GET /api/create-room/'
+- Response: 200
   - content-type: 'application/json'
   - body: (String) "{lobbyId}"
